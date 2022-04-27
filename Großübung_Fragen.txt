@@ -1,0 +1,10 @@
+Fragen Großübung 6.05 
+
+1. Benutzung der Wrap/Unwrap Funktion
+-  Erklräung Unterschied Put/Wrap Funktion
+-  Vorteile/Nachteile
+
+
+Aus Interesse:
+
+- Beim Client Umwandlung aus String -> Byte: Warum werden beim Referenzclient +/- bytes/Indizes addiert?
