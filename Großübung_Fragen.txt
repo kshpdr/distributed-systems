@@ -3,7 +3,7 @@ Fragen Großübung 6.05
 1. Benutzung der Wrap/Unwrap Funktion
 -  Erklräung Unterschied Put/Wrap Funktion
 -  Vorteile/Nachteile
-
+2. Maximale Größe/Länge der empfangenen Bytes erfragen
 
 Aus Interesse:
 
