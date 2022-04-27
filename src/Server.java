@@ -21,7 +21,7 @@ public class Server {
         serverSocket.configureBlocking(false);
 
 
-
+        //Registriere Server-Socket auf Selektor und höre auf das Event: "OP_ACCEPT"
         try {
             serverSocket.register(selector, SelectionKey.OP_ACCEPT);
         }catch (Exception e) {
@@ -29,22 +29,24 @@ public class Server {
         }
 
 
-
+        //Lasse den Server laufen
         while(true){
+
+
+            //Fahre fort, wenn keine Elemente im Ready-Set sind
             if(selector.select() == 0){
                 continue;
             }
 
+
+            //Sammle alle keys
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
             Iterator<SelectionKey> iter = selectedKeys.iterator();
 
-
+            //arbeite jedes key ab
             while(iter.hasNext()){
                 SelectionKey key = iter.next();
 
-
-                //check ready set
-                //...
 
                 if(key.isAcceptable()){
                     ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
@@ -55,6 +57,8 @@ public class Server {
                 }
 
                 if(key.isReadable()){
+
+                    //maximale empfangen Byte-Anzahl
                     ByteBuffer buf = ByteBuffer.allocate(1024);
 
                     SocketChannel channel = (SocketChannel) key.channel();
@@ -62,9 +66,6 @@ public class Server {
                     channel.read(buf);
 
                     buf.flip();
-
-                    //Teste nur bisschen herum
-
 
                     Charset messageCharset = null;
                     try {
@@ -84,13 +85,40 @@ public class Server {
                     }
 
                     String s = charBuffer.toString();
-                    System.out.println(s);
-                    continue;
+
+                    //TODO: Hier nur eine Idee wie mans umsetzen könnte
+                    switch (s){
+                        case "HELO":
+                            break;
+                        case "MAIL FROM":
+                            break;
+                        case "RCPT TO":
+                            break;
+                        case "DATA":
+                            break;
+                        case "HELP":
+                            break;
+                        case "QUIT":
+                            break;
+                    }
                 }
 
                 iter.remove();
             }
         }
+    }
+
+    //ZUR TESTZWECKEN
+
+    static int count = 0;
+    //Führe main Methode aus
+    static void start() throws IOException {
+        System.out.println("Server has started");
+        count++;
+
+
+        main(null);
+
     }
 
 

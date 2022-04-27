@@ -8,22 +8,12 @@ import java.nio.charset.UnsupportedCharsetException;
 public class Client {
     public static void main(String[] args) throws IOException {
         SocketChannel client = SocketChannel.open(new InetSocketAddress("localhost", 8192));
-        ByteBuffer byteBuffer = ByteBuffer.allocate(256);
+        ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
         String message = "Hello Server";
         Charset messageCharset = null;
 
-        /*
-        try {
-            messageCharset = Charset.forName("US-ASCII");
-        }catch (UnsupportedCharsetException e){
-            e.printStackTrace();
-        }
-
-        byte []bytes = message.getBytes(messageCharset);
-        byteBuffer.put(bytes);
-        */
-
-        byteBuffer = ByteBuffer.wrap(message.getBytes());
+        byte[] bytes = message.getBytes("US-ASCII");
+        byteBuffer = ByteBuffer.wrap(bytes);
 
         try {
             client.write(byteBuffer);
@@ -34,5 +24,20 @@ public class Client {
         }
 
         client.close();
+    }
+
+
+
+    //ZUR TESTZWECKEN
+
+    static int count = 0;
+    //Führe main Methode aus
+    static void start() throws IOException {
+        System.out.println("Client has started");
+        count++;
+
+
+        main(null);
+
     }
 }
