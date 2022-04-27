@@ -5,16 +5,22 @@ import java.nio.channels.*;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
+import java.nio.charset.UnsupportedCharsetException;
 import java.util.Iterator;
 import java.util.Set;
 
 public class Server {
     public static void main(String[] args) throws IOException {
 
+        //initialisiere Selektor, Server-Socket
         Selector selector = Selector.open();
         ServerSocketChannel serverSocket = ServerSocketChannel.open();
+
+        //Binde Server-Socket and "localhost" in Port 8192
         serverSocket.bind(new InetSocketAddress("localhost", 8192));
         serverSocket.configureBlocking(false);
+
+
 
         try {
             serverSocket.register(selector, SelectionKey.OP_ACCEPT);
@@ -61,6 +67,13 @@ public class Server {
 
 
                     Charset messageCharset = null;
+                    try {
+                        messageCharset = Charset.forName("US-ASCII");
+                    }catch (UnsupportedCharsetException e){
+                        e.printStackTrace();
+                    }
+
+
                     CharsetDecoder decoder = messageCharset.newDecoder();
 
                     CharBuffer charBuffer = null;
@@ -72,7 +85,7 @@ public class Server {
 
                     String s = charBuffer.toString();
                     System.out.println(s);
-
+                    continue;
                 }
 
                 iter.remove();
