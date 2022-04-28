@@ -14,7 +14,7 @@ import java.util.Set;
 
 
 
-class State{
+class State {
     public final static int CONNECTED = 0;
     public final static int RECEIVEDWELCOME = 1;
     public final static int MAILFROMSENT = 2;
@@ -133,7 +133,7 @@ public class Server {
 
 
                     //Just EXIT for now, continue working on later
-                    System.exit(0);
+                    //System.exit(0);
 
                     //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
                     //...
