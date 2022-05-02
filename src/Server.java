@@ -128,7 +128,7 @@ public class Server {
                     if(state.getState() == State.CONNECTED){ //CONNECTED:
                         sendMessage(channel, state.getByteBuffer(), WELCOMEMESSAGE+ "\r\n");
                         //Willkommensnachricht wird nur einmal pro Client geschickt
-                        state.setState(State.RECEIVEDWELCOME);
+
                     }
 
 
@@ -146,7 +146,8 @@ public class Server {
                         // OKMessage muss nur einmal gesendet werden
                         state.setState(State.MAILFROMSENT);
                     }
-                    System.exit(0);
+                   continue;
+                   // System.exit(0);
 
 
                 }
@@ -155,7 +156,16 @@ public class Server {
                 //gelesenes aus dem Buffer
                 //Nachrichten gesendet vom client
                 if(key.isReadable()){
-                    //System.out.println("isReadable");
+                    //System.out.println("isReadable")
+                    State state = null;
+
+                    //Wenn key schon ein Status bekommen hatte, dann speichere diesen, ansonsten gib dem key einen neuen Status
+                    if(key.attachment() != null) {
+                        state = (State) key.attachment();
+                    }else{
+                        state = new State();
+                        key.attach(state);
+                    }
 
 
                     //maximale empfangen Byte-Anzahl
@@ -196,14 +206,15 @@ public class Server {
                     //HELO
 
                     //Bestätigung HALO Client
-                    if(s.contains("HELO")) {
+                    if(s.contains("HELO ")) {
+                        state.setState(State.RECEIVEDWELCOME);
                         System.out.println("250" + s);
                     }
 
 
                     //Just EXIT for now, continue working on later
-                    System.exit(0);
-
+                    //System.exit(0);
+                    continue;
                     //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
                     //...
 
