@@ -8,6 +8,7 @@ import java.nio.charset.Charset;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Set;
 
 
@@ -48,7 +49,10 @@ class State {
 public class Server {
 
 
-    public final static String WELCOMEMESSAGE = "220 ";
+    public final static String WELCOMEMESSAGE = "220";
+    public final static String OKMESSAGE = "250";
+    public final static String CLOSINGMESSAGE = "221";
+    public final static String STARTMAILINPUTMESSAGE = "354";
 
 
     public static void main(String[] args) throws IOException {
@@ -103,6 +107,7 @@ public class Server {
 
                 }
 
+                //aus
                 if(key.isWritable()){
                     //System.out.println("isWritable");
 
@@ -121,11 +126,7 @@ public class Server {
 
                     //Wenn Client zum ersten mal connected, schicke eine Willkommensnachricht
                     if(state.getState() == State.CONNECTED){ //CONNECTED:
-
-                        //TODO: Sende "220" an den Client
-                        sendOpeningMessage(channel, state.getByteBuffer());
-
-
+                        sendMessage(channel, state.getByteBuffer(), WELCOMEMESSAGE+ "\r\n");
                         //Willkommensnachricht wird nur einmal pro Client geschickt
                         state.setState(State.RECEIVEDWELCOME);
                     }
@@ -138,13 +139,21 @@ public class Server {
                     //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
                     //...
 
-
+                    //HELO
+                    if(state.getState() == State.RECEIVEDWELCOME){
+                        // Server bestätigt Client Name mit dem String 250
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
+                        // OKMessage muss nur einmal gesendet werden
+                        state.setState(State.MAILFROMSENT);
+                    }
+                    System.exit(0);
 
 
                 }
 
 
-
+                //gelesenes aus dem Buffer
+                //Nachrichten gesendet vom client
                 if(key.isReadable()){
                     //System.out.println("isReadable");
 
@@ -184,19 +193,47 @@ public class Server {
 
                     System.out.println("Message received: " + s);
 
+                    //HELO
+
+                    //Bestätigung HALO Client
+                    if(s.contains("HELO")) {
+                        System.out.println("250" + s);
+                    }
+
 
                     //Just EXIT for now, continue working on later
                     System.exit(0);
 
                     //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
                     //...
+
                 }
 
                 iter.remove();
             }
         }
     }
+    private static void sendMessage(SocketChannel clientChannel, ByteBuffer byteBuffer, String message) throws UnsupportedEncodingException{
+        try {
+            byteBuffer.clear();
+            byte[] bytes = message.getBytes("US-ASCII");
+            byteBuffer.put(bytes);
+        }catch (UnsupportedEncodingException e){
+            e.printStackTrace();
+        }
 
+        //Verschicke die Bytes
+        try {
+            byteBuffer.flip();
+            clientChannel.write(byteBuffer);
+            //channel.close();
+            byteBuffer.clear();
+            //System.out.println("Message sent");
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
     private static void sendOpeningMessage(SocketChannel clientChannel, ByteBuffer byteBuffer) throws UnsupportedEncodingException {
 
         //Encode String zu Bytes

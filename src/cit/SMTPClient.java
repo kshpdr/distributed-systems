@@ -514,7 +514,7 @@ public class SMTPClient {
 						SMTPClientState state = (SMTPClientState) key.attachment();
 						SocketChannel channel = (SocketChannel) key.channel();
 						
-						if(!readCommandLine(channel, state.getByteBuffer()))
+						if(readCommandLine(channel, state.getByteBuffer()))
 							continue;
 						
 						
