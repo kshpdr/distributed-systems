@@ -89,7 +89,7 @@ public class Server {
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
             Iterator<SelectionKey> iter = selectedKeys.iterator();
 
-            //arbeite jedes key ab
+            //arbeite jeden key ab
             while(iter.hasNext()){
                 SelectionKey key = iter.next();
 
@@ -127,6 +127,7 @@ public class Server {
                     //Wenn Client zum ersten mal connected, schicke eine Willkommensnachricht
                     if(state.getState() == State.CONNECTED){ //CONNECTED:
                         sendMessage(channel, state.getByteBuffer(), WELCOMEMESSAGE+ "\r\n");
+                        continue;
                         //Willkommensnachricht wird nur einmal pro Client geschickt
 
                     }
@@ -141,14 +142,14 @@ public class Server {
 
                     //HELO
                     if(state.getState() == State.RECEIVEDWELCOME){
-                        // Server bestätigt Client Name mit dem String 250
+                        // Server bestätigt Client mit dem String 250
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
                         // OKMessage muss nur einmal gesendet werden
                         state.setState(State.MAILFROMSENT);
+                        continue;
                     }
-                   continue;
-                   // System.exit(0);
 
+                    System.exit(0);
 
                 }
 
@@ -156,18 +157,18 @@ public class Server {
                 //gelesenes aus dem Buffer
                 //Nachrichten gesendet vom client
                 if(key.isReadable()){
-                    //System.out.println("isReadable")
+                    //System.out.println("isReadable");
+
+
                     State state = null;
 
                     //Wenn key schon ein Status bekommen hatte, dann speichere diesen, ansonsten gib dem key einen neuen Status
                     if(key.attachment() != null) {
                         state = (State) key.attachment();
-                    }else{
+                    }else {
                         state = new State();
                         key.attach(state);
                     }
-
-
                     //maximale empfangen Byte-Anzahl
                     ByteBuffer buf = ByteBuffer.allocate(8192);
 
@@ -197,24 +198,23 @@ public class Server {
                         e.printStackTrace();
                     }
 
-                    String s = charBuffer.toString();
+                    if (state.getState() == State.CONNECTED) {
+                        String s = charBuffer.toString();
+                        System.out.println("Message received: " + s);
 
+                        //HELO
 
-
-                    System.out.println("Message received: " + s);
-
-                    //HELO
-
-                    //Bestätigung HALO Client
-                    if(s.contains("HELO ")) {
-                        state.setState(State.RECEIVEDWELCOME);
-                        System.out.println("250" + s);
+                        //Bestätigung HALO Client
+                        if (s.contains("HELO")) {
+                            state.setState(State.RECEIVEDWELCOME);
+                            System.out.println("Received HELO...Setting state to RECEIVEDWELCOME" + s);
+                            continue;
+                        }
                     }
 
-
                     //Just EXIT for now, continue working on later
-                    //System.exit(0);
-                    continue;
+                    System.exit(0);
+
                     //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
                     //...
 
