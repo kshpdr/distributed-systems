@@ -84,7 +84,10 @@ class State {
 public class Server {
 
 
-    public final static String WELCOMEMESSAGE = "220\n\r\n\r";
+    public final static String WELCOMEMESSAGE = "220 \r\n";
+    public final static String OKMESSAGE = "250\n\r\n\r";
+    public final static String CLOSINGMESSAGE = "221\n\r\n\r";
+    public final static String STARTMAILINPUTMESSAGE = "354\n\r\n\r";
 
 
     public static void main(String[] args) throws IOException {
@@ -124,9 +127,9 @@ public class Server {
             //arbeite jedes key ab
             while(iter.hasNext()){
                 SelectionKey key = iter.next();
-                System.out.println(key.toString());
-                System.out.println(key.interestOps());
-                System.out.println(key.readyOps());
+//                System.out.println(key.toString());
+//                System.out.println(key.interestOps());
+//                System.out.println(key.readyOps());
 
 
                 if(key.isAcceptable()){

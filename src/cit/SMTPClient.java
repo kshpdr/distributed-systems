@@ -495,9 +495,9 @@ public class SMTPClient {
 				
 				SelectionKey key = iter.next();
 				
-				System.out.println(key.toString());
-				System.out.println(key.readyOps());
-				System.out.println(key.interestOps());
+//				System.out.println(key.toString());
+//				System.out.println(key.readyOps());
+//				System.out.println(key.interestOps());
 				
 				try {
 					
