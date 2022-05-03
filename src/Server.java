@@ -26,6 +26,10 @@ class State {
 
     private int state;
     private ByteBuffer byteBuffer;
+    private int previousState;
+    private byte [] from;
+    private byte [] to;
+    private byte [] message;
 
     public State(){
         this.state = CONNECTED;
@@ -43,12 +47,44 @@ class State {
     public ByteBuffer getByteBuffer() {
         return byteBuffer;
     }
+
+    public byte[] getFrom() {
+        return from;
+    }
+
+    public void setFrom(byte[] from) {
+        this.from = from;
+    }
+
+    public byte[] getTo() {
+        return to;
+    }
+
+    public void setTo(byte[] to) {
+        this.to = to;
+    }
+
+    public byte[] getMessage() {
+        return message;
+    }
+
+    public void setMessage(byte[] message) {
+        this.message = message;
+    }
+
+    public int getPreviousState() {
+        return previousState;
+    }
+
+    public void setPreviousState(int previousState) {
+        this.previousState = previousState;
+    }
 }
 
 public class Server {
 
 
-    public final static String WELCOMEMESSAGE = "220 ";
+    public final static String WELCOMEMESSAGE = "220\n\r\n\r";
 
 
     public static void main(String[] args) throws IOException {
@@ -88,6 +124,9 @@ public class Server {
             //arbeite jedes key ab
             while(iter.hasNext()){
                 SelectionKey key = iter.next();
+                System.out.println(key.toString());
+                System.out.println(key.interestOps());
+                System.out.println(key.readyOps());
 
 
                 if(key.isAcceptable()){
@@ -100,6 +139,8 @@ public class Server {
                     //Speichere den Status jedes Keys ab, um zu unterscheiden
                     State state = new State();
                     key.attach(state);
+
+                    System.out.println("Connection established");
 
                 }
 
@@ -211,8 +252,8 @@ public class Server {
 
         //Verschicke die Bytes
         try {
-            //System.out.print("Sent: ");
-            //printBuffer(byteBuffer);
+            System.out.print("Sent: ");
+            printBuffer(byteBuffer);
             byteBuffer.flip();
 
             clientChannel.write(byteBuffer);
