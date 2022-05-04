@@ -23,10 +23,11 @@ class State {
     public final static int MAILFROMSENT = 4;
     public final static int MAILFROMREAD = 5;
     public final static int RCPTTOSENT = 6;
-    public final static int DATASENT = 7;
-    public final static int MESSAGESENT = 8;
-    public final static int QUITSENT = 9;
-    public final static int HELPSENT = 10;
+    public final static int RCPTTOREAD = 7;
+    public final static int DATASENT = 8;
+    public final static int MESSAGESENT = 9;
+    public final static int QUITSENT = 10;
+    public final static int HELPSENT = 11;
 
     private int state;
     private int previousState;
@@ -172,7 +173,6 @@ public class Server {
                     }
 
                     if (state.getState() == State.MAILFROMREAD){
-                        String s = readMessage(channel, state.getByteBuffer());
                         if (s.contains("RCPT TO")){
                             state.setState(State.RCPTTOSENT);
                             System.out.println("Received RCPT TO...Setting state to RCPTTO " + s);
@@ -228,7 +228,7 @@ public class Server {
 
                     if(state.getState() == State.RCPTTOSENT){
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
-                        state.setState(State.DATASENT);
+                        state.setState(State.RCPTTOREAD);
                     }
                 }
 
