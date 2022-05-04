@@ -19,12 +19,14 @@ class State {
     public final static int CONNECTED = 0;
     public final static int RECEIVEDWELCOME = 1;
     public final static int HELOSENT = 2;
-    public final static int MAILFROMSENT = 3;
-    public final static int RCPTTOSENT = 4;
-    public final static int DATASENT = 5;
-    public final static int MESSAGESENT = 6;
-    public final static int QUITSENT = 7;
-    public final static int HELPSENT = 8;
+    public final static int HELOREAD = 3;
+    public final static int MAILFROMSENT = 4;
+    public final static int MAILFROMREAD = 5;
+    public final static int RCPTTOSENT = 6;
+    public final static int DATASENT = 7;
+    public final static int MESSAGESENT = 8;
+    public final static int QUITSENT = 9;
+    public final static int HELPSENT = 10;
 
     private int state;
     private ByteBuffer byteBuffer;
@@ -54,6 +56,11 @@ public class Server {
     public final static String OKMESSAGE = "250 ";
     public final static String CLOSINGMESSAGE = "221";
     public final static String STARTMAILINPUTMESSAGE = "354";
+    public final static String HELPMESSAGE =
+            "HELO: initiate MAIL\n" +
+            "MAIL FROM: sender-address\n" +
+            "RCPT TO: receiver-address\n" +
+            "DATA";
 
 
     public static void main(String[] args) throws IOException {
@@ -130,8 +137,8 @@ public class Server {
                         String s = readMessage(channel, state.getByteBuffer());
                         System.out.println("Message received: " + s);
 
-                        //HELO
 
+                        //HELO
                         //Bestätigung HELO Client
                         if (s.contains("HELO")) {
                             state.setState(State.HELOSENT);
@@ -139,11 +146,11 @@ public class Server {
                         }
                     }
 
-                    if (state.getState() == State.MAILFROMSENT){
+                    if (state.getState() == State.HELOREAD){
                         String s = readMessage(channel, state.getByteBuffer());
                             if (s.contains("MAIL FROM")){
-                                state.setState(State.RCPTTOSENT);
-                                System.out.println("Received MAIL FROM...Setting state to RCTTOSENT " + s);
+                                state.setState(State.MAILFROMSENT);
+                                System.out.println("Received MAIL FROM...Setting state to MAILFROMSENT " + s);
                             }
                     }
 
@@ -156,7 +163,7 @@ public class Server {
 
                 }
 
-                //aus
+
                 if(key.isWritable()){
                     //System.out.println("isWritable");
 
@@ -196,13 +203,13 @@ public class Server {
                         // Server bestätigt Client mit dem String 250
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
                         // OKMessage muss nur einmal gesendet werden
-                        state.setState(State.MAILFROMSENT);
+                        state.setState(State.HELOREAD);
                     }
 
                     //System.exit(0);
-                    if(state.getState() == State.RCPTTOSENT){
+                    if(state.getState() == State.MAILFROMSENT){
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
-                        state.setState(State.DATASENT);
+                        state.setState(State.MAILFROMREAD);
                     }
                 }
 
