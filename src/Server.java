@@ -25,9 +25,10 @@ class State {
     public final static int RCPTTOSENT = 6;
     public final static int RCPTTOREAD = 7;
     public final static int DATASENT = 8;
-    public final static int MESSAGESENT = 9;
-    public final static int QUITSENT = 10;
-    public final static int HELPSENT = 11;
+    public final static int DATASENTREAD = 9;
+    public final static int MESSAGESENT = 10;
+    public final static int QUITSENT = 11;
+    public final static int HELPSENT = 12;
 
     private int state;
     private int previousState;
@@ -179,6 +180,13 @@ public class Server {
                         }
                     }
 
+                    if (state.getState() == State.RCPTTOREAD){
+                        if (s.contains("DATA")){
+                            state.setState(State.DATASENT);
+                            System.out.println("Received DATASENT...Setting state to DATA " + s);
+                        }
+                    }
+
                 }
 
 
@@ -229,6 +237,11 @@ public class Server {
                     if(state.getState() == State.RCPTTOSENT){
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
                         state.setState(State.RCPTTOREAD);
+                    }
+
+                    if(state.getState() == State.DATASENT){
+                        sendMessage(channel, state.getByteBuffer(),  STARTMAILINPUTMESSAGE+ "\r\n");
+                        state.setState(State.DATASENTREAD);
                     }
                 }
 
