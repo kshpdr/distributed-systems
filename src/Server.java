@@ -3,10 +3,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.nio.*;
 import java.nio.channels.*;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.UnsupportedCharsetException;
+import java.nio.charset.*;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -16,13 +13,13 @@ import java.util.Set;
 
 class State {
     public final static int CONNECTED = 0;
-    public final static int RECEIVEDWELCOME = 1;
-    public final static int MAILFROMSENT = 2;
-    public final static int RCPTTOSENT = 3;
-    public final static int DATASENT = 4;
-    public final static int MESSAGESENT = 5;
+    public final static int SENTWELCOME = 1;
+    public final static int MAILFROMRECEIVED = 2;
+    public final static int RCPTTORECEIVED = 3;
+    public final static int DATARECEIVED = 4;
+    public final static int MESSAGERECEIVED = 5;
     public final static int QUITSENT = 6;
-    public final static int HELPSENT = 7;
+    public final static int HELPRECEIVED = 7;
 
     private int state;
     private ByteBuffer byteBuffer;
@@ -30,6 +27,7 @@ class State {
     private byte [] from;
     private byte [] to;
     private byte [] message;
+    private String messageString = "";
 
     public State(){
         this.state = CONNECTED;
@@ -72,6 +70,8 @@ class State {
         this.message = message;
     }
 
+    public void extendMessageString(String messageString) {this.messageString += messageString;}
+
     public int getPreviousState() {
         return previousState;
     }
@@ -83,11 +83,11 @@ class State {
 
 public class Server {
 
-
+    public final static String HELPESSAGE = "214 \r\n";
     public final static String WELCOMEMESSAGE = "220 \r\n";
-    public final static String OKMESSAGE = "250\n\r\n\r";
-    public final static String CLOSINGMESSAGE = "221\n\r\n\r";
-    public final static String STARTMAILINPUTMESSAGE = "354\n\r\n\r";
+    public final static String OKMESSAGE = "250 \r\n";
+    public final static String CLOSINGMESSAGE = "221 \r\n";
+    public final static String STARTMAILINPUTMESSAGE = "354 \r\n";
 
 
     public static void main(String[] args) throws IOException {
@@ -165,38 +165,27 @@ public class Server {
 
                     //Wenn Client zum ersten mal connected, schicke eine Willkommensnachricht
                     if(state.getState() == State.CONNECTED){ //CONNECTED:
-
                         //TODO: Sende "220" an den Client
                         sendOpeningMessage(channel, state.getByteBuffer());
-
-
-                        //Willkommensnachricht wird nur einmal pro Client geschickt
-                        state.setState(State.RECEIVEDWELCOME);
+                        state.setState(State.SENTWELCOME);
+                        getCommand(channel, state.getByteBuffer());
                     }
 
-
-
-                    //Just EXIT for now, continue working on later
-                    //System.exit(0);
-
                     //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
-                    //...
-
-
-
-
+//                    if (state.getState() == State.DATARECEIVED) {
+//                        readData(channel)
+//                    }
                 }
 
 
 
                 if(key.isReadable()){
                     //System.out.println("isReadable");
-
-
                     //maximale empfangen Byte-Anzahl
                     ByteBuffer buf = ByteBuffer.allocate(8192);
 
                     SocketChannel channel = (SocketChannel) key.channel();
+                    State state = null;
 
                     channel.read(buf);
                     //System.out.println("Test");
@@ -224,22 +213,87 @@ public class Server {
 
                     String s = charBuffer.toString();
 
+                    if(key.attachment() != null) {
+                        state = (State) key.attachment();
+                    }else{
+                        state = new State();
+                        key.attach(state);
+                    }
+
 
 
                     System.out.println("Message received: " + s);
 
 
                     //Just EXIT for now, continue working on later
-                    System.exit(0);
+                    //System.exit(0);
 
                     //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
-                    //...
+                    if (s.contains("HELO")){
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+                    }
+
+                    if (s.contains("MAIL FROM")){
+                        System.out.println(s.substring(11));
+                        byte[] from = s.substring(11).getBytes(messageCharset);
+                        state.setFrom(from);
+                        state.setState(State.MAILFROMRECEIVED);
+
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+                    }
+
+                    if (s.contains("HELP")){
+                        state.setState(State.HELPRECEIVED);
+                        sendMessage(channel, state.getByteBuffer(), HELPESSAGE.getBytes(messageCharset));
+                    }
+
+                    if (s.contains("RCPT TO:")){
+                        System.out.println(s.substring(9));
+                        byte[] to = s.substring(9).getBytes(messageCharset);
+                        state.setTo(to);
+                        state.setState(State.RCPTTORECEIVED);
+
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+                    }
+
+                    if (s.contains("DATA")){
+                        state.setState(State.DATARECEIVED);
+                        sendMessage(channel, state.getByteBuffer(), STARTMAILINPUTMESSAGE.getBytes(messageCharset));
+                    }
+
+                    if (state.getState() == State.DATARECEIVED) {
+                        if (s != "\n\r.\n\r"){
+                            state.extendMessageString(s);
+                        }
+                        else if (s == "\n\r.\n\r") {
+                            sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+                            state.setState(State.MESSAGERECEIVED);
+                        }
+                    }
+
                 }
 
                 iter.remove();
             }
         }
     }
+    private static void getCommand(SocketChannel channel, ByteBuffer buffer) throws IOException {
+        channel.read(buffer);
+        printBuffer(buffer);
+    }
+
+    private static void sendMessage(SocketChannel clientChannel, ByteBuffer buffer, byte [] message) throws IOException {
+
+        buffer.clear();
+
+        buffer.put(message);
+        buffer.flip();
+
+        clientChannel.write(buffer);
+
+        buffer.clear();
+    }
+
 
     private static void sendOpeningMessage(SocketChannel clientChannel, ByteBuffer byteBuffer) throws UnsupportedEncodingException {
 
