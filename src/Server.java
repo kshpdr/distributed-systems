@@ -110,7 +110,7 @@ public class Server {
             "214 " +
             "HELO: initiate MAIL\n" +
             "MAIL FROM:<sender@example.org> : provide sender-address\n" +
-            "RCPT TO<receiver@example.com> : provide receiver-address\n" +
+            "RCPT TO:<receiver@example.com> : provide receiver-address\n" +
             "DATA: initiate writing\n" +
             "QUIT: close the connection\n";
 
@@ -311,7 +311,10 @@ public class Server {
                     if(state.getState() == State.QUITSENT){
                         sendMessage(channel, state.getByteBuffer(), CLOSINGMESSAGE + "\r\n");
                         state.setState(State.DEAD);
-                        //channel.close();
+                        channel.close();
+
+
+                        saveEmail(state.getSender(), state.getReceiver(), state.getMessage());
                     }
                 }
 
@@ -319,6 +322,10 @@ public class Server {
                 iter.remove();
             }
         }
+    }
+
+    private static void saveEmail(String sender, String receiver, String message) {
+        //TODO: Directory<receiver> und File<sender> mit Inhalt <message> reinschreiben
     }
 
     public static String getReceiverContent(String s) {
