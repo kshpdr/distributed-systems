@@ -25,7 +25,7 @@ class State {
     public final static int RCPTTOSENT = 6;
     public final static int RCPTTOREAD = 7;
     public final static int DATASENT = 8;
-    public final static int DATASENTREAD = 9;
+    public final static int DATAREAD = 9;
     public final static int MESSAGESENT = 10;
     public final static int QUITSENT = 11;
     public final static int HELPSENT = 12;
@@ -241,7 +241,7 @@ public class Server {
 
                     if(state.getState() == State.DATASENT){
                         sendMessage(channel, state.getByteBuffer(),  STARTMAILINPUTMESSAGE+ "\r\n");
-                        state.setState(State.DATASENTREAD);
+                        state.setState(State.DATAREAD);
                     }
                 }
 
