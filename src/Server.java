@@ -187,6 +187,11 @@ public class Server {
                         }
                     }
 
+                    if (state.getState() == State.DATAREAD){
+                        System.out.println(s);
+                        state.setState(State.MESSAGESENT);
+                    }
+
                 }
 
 
