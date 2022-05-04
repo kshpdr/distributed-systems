@@ -54,8 +54,8 @@ public class Server {
 
     public final static String WELCOMEMESSAGE = "220 ";
     public final static String OKMESSAGE = "250 ";
-    public final static String CLOSINGMESSAGE = "221";
-    public final static String STARTMAILINPUTMESSAGE = "354";
+    public final static String CLOSINGMESSAGE = "221 ";
+    public final static String STARTMAILINPUTMESSAGE = "354 ";
     public final static String HELPMESSAGE =
             "HELO: initiate MAIL\n" +
             "MAIL FROM: sender-address\n" +
@@ -154,6 +154,13 @@ public class Server {
                             }
                     }
 
+                    if (state.getState() == State.MAILFROMREAD){
+                        String s = readMessage(channel, state.getByteBuffer());
+                        if (s.contains("RCPT TO")){
+                            state.setState(State.RCPTTOSENT);
+                            System.out.println("Received RCPT TO...Setting state to RCPTTO " + s);
+                        }
+                    }
 
                     //Just EXIT for now, continue working on later
                     //System.exit(0);
@@ -210,6 +217,11 @@ public class Server {
                     if(state.getState() == State.MAILFROMSENT){
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
                         state.setState(State.MAILFROMREAD);
+                    }
+
+                    if(state.getState() == State.RCPTTOSENT){
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
+                        state.setState(State.DATASENT);
                     }
                 }
 
