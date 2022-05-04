@@ -3,14 +3,13 @@ import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.nio.*;
 import java.nio.channels.*;
-import java.nio.charset.CharacterCodingException;
-import java.nio.charset.Charset;
-import java.nio.charset.CharsetDecoder;
-import java.nio.charset.UnsupportedCharsetException;
+import java.nio.charset.*;
+import java.nio.file.Files;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.Set;
-
+import java.util.Random;
+import java.nio.file.*;
 
 
 
@@ -115,7 +114,14 @@ public class Server {
             "QUIT: close the connection\n";
 
 
-    public static void main(String[] args) throws IOException {
+
+
+
+    public static void main(String[] args) throws Exception {
+
+
+
+
 
         //initialisiere Selektor, Server-Socket
         Selector selector = Selector.open();
@@ -324,8 +330,27 @@ public class Server {
         }
     }
 
-    private static void saveEmail(String sender, String receiver, String message) {
-        //TODO: Directory<receiver> und File<sender> mit Inhalt <message> reinschreiben
+    private static void saveEmail(String sender, String receiver, String message) throws Exception{
+        // Random Zahl für Messenger ID
+        Random rand = new Random();
+        int messengerID = rand.nextInt(10000);
+
+        try{
+            //Create Directory
+            Path p = Paths.get("/home/hanna/Dropbox/Uni/VS_Hausaufgaben/vs_uebung_1_gruppe_1/src/emails/" + receiver);
+            if(!Files.exists(p)){
+                Path path = Files.createDirectories(p);
+            }
+            //Create File
+            Path d = Paths.get(p + "/" + sender + "_" + messengerID + ".txt");
+            if(!Files.exists(d)){
+                Files.createFile(d);
+            }
+            //Put message in File
+            Files.write(d, message.getBytes());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
     public static String getReceiverContent(String s) {
@@ -344,6 +369,8 @@ public class Server {
 
         return content;
     }
+
+
 
     private static String readMessage(SocketChannel clientChannel, ByteBuffer byteBuffer) throws IOException {
         String s = "";
