@@ -29,10 +29,12 @@ class State {
     public final static int HELPSENT = 10;
 
     private int state;
+    private int previousState;
     private ByteBuffer byteBuffer;
 
     public State(){
         this.state = CONNECTED;
+        this.previousState = CONNECTED;
         this.byteBuffer = ByteBuffer.allocate(8192);
     }
 
@@ -40,8 +42,17 @@ class State {
         return this.state;
     }
 
+    public int getPreviousState(){
+        return previousState;
+    }
+
     public void setState(int state){
+        if(previousState != State.HELPSENT){
+            previousState = this.state;
+        }
+
         this.state = state;
+
     }
 
     public ByteBuffer getByteBuffer() {
@@ -57,10 +68,12 @@ public class Server {
     public final static String CLOSINGMESSAGE = "221";
     public final static String STARTMAILINPUTMESSAGE = "354";
     public final static String HELPMESSAGE =
+            "214 " +
             "HELO: initiate MAIL\n" +
-            "MAIL FROM: sender-address\n" +
-            "RCPT TO: receiver-address\n" +
-            "DATA";
+            "MAIL FROM:<sender@example.org> : provide sender-address\n" +
+            "RCPT TO<receiver@example.com> : provide receiver-address\n" +
+            "DATA: initiate writing\n" +
+            "QUIT: close the connection\n";
 
 
     public static void main(String[] args) throws IOException {
@@ -133,8 +146,13 @@ public class Server {
                     }
 
 
+                    String s = readMessage(channel, state.getByteBuffer());
+                    if(s.contains("HELP")){
+                        state.setState(State.HELPSENT);
+                    }
+
                     if (state.getState() == State.RECEIVEDWELCOME) {
-                        String s = readMessage(channel, state.getByteBuffer());
+
                         System.out.println("Message received: " + s);
 
 
@@ -147,19 +165,12 @@ public class Server {
                     }
 
                     if (state.getState() == State.HELOREAD){
-                        String s = readMessage(channel, state.getByteBuffer());
                             if (s.contains("MAIL FROM")){
                                 state.setState(State.MAILFROMSENT);
                                 System.out.println("Received MAIL FROM...Setting state to MAILFROMSENT " + s);
                             }
                     }
 
-
-                    //Just EXIT for now, continue working on later
-                    //System.exit(0);
-
-                    //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
-                    //...
 
                 }
 
@@ -189,14 +200,10 @@ public class Server {
                     }
 
 
-
-                    //Just EXIT for now, continue working on later
-                    //System.exit(0);
-
-                    //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
-                    //...
-
-
+                    if(state.getState() == State.HELPSENT){
+                        sendMessage(channel, state.getByteBuffer(), HELPMESSAGE + "\r\n");
+                        state.setState(state.getPreviousState());
+                    }
 
 
                     if(state.getState() == State.HELOSENT){ //HELO:
@@ -212,9 +219,6 @@ public class Server {
                         state.setState(State.MAILFROMREAD);
                     }
                 }
-
-
-
 
 
                 iter.remove();
