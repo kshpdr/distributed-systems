@@ -27,17 +27,50 @@ class State {
     public final static int DATASENT = 8;
     public final static int DATAREAD = 9;
     public final static int MESSAGESENT = 10;
-    public final static int QUITSENT = 11;
-    public final static int HELPSENT = 12;
+    public final static int MESSSAGEREAD = 11;
+    public final static int QUITSENT = 12;
+    public final static int DEAD = 13;
+    public final static int HELPSENT = 14;
 
     private int state;
     private int previousState;
     private ByteBuffer byteBuffer;
 
+    private String sender;
+    private String receiver;
+    private String message;
+
     public State(){
         this.state = CONNECTED;
         this.previousState = CONNECTED;
         this.byteBuffer = ByteBuffer.allocate(8192);
+        this.sender = "";
+        this.receiver = "";
+        this.message = "";
+    }
+
+    public String getSender() {
+        return sender;
+    }
+
+    public void setSender(String sender) {
+        this.sender = sender;
+    }
+
+    public String getReceiver() {
+        return receiver;
+    }
+
+    public void setReceiver(String receiver) {
+        this.receiver = receiver;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 
     public int getState(){
@@ -124,17 +157,10 @@ public class Server {
                     client.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 
 
-                    //Speichere den Status jedes Keys ab, um zu unterscheiden
-                    //State state = new State();
-                    //key.attach(state);
-
                 }
 
 
-                //gelesenes aus dem Buffer
-                //Nachrichten gesendet vom client
                 if(key.isReadable()){
-                    //System.out.println("isReadable");
 
                     SocketChannel channel = (SocketChannel) key.channel();
                     State state = null;
@@ -151,6 +177,7 @@ public class Server {
                     String s = readMessage(channel, state.getByteBuffer());
                     if(s.contains("HELP")){
                         state.setState(State.HELPSENT);
+                        System.out.println("Received HELP...Setting state to HELPSENT " + s);
                     }
 
                     if (state.getState() == State.RECEIVEDWELCOME) {
@@ -170,6 +197,10 @@ public class Server {
                             if (s.contains("MAIL FROM")){
                                 state.setState(State.MAILFROMSENT);
                                 System.out.println("Received MAIL FROM...Setting state to MAILFROMSENT " + s);
+
+                                //save the sender-address
+                                String content = getSenderContent(s);
+                                state.setSender(content);
                             }
                     }
 
@@ -177,6 +208,10 @@ public class Server {
                         if (s.contains("RCPT TO")){
                             state.setState(State.RCPTTOSENT);
                             System.out.println("Received RCPT TO...Setting state to RCPTTO " + s);
+
+                            //save the receiver-address
+                            String content = getReceiverContent(s);
+                            state.setReceiver(content);
                         }
                     }
 
@@ -190,13 +225,25 @@ public class Server {
                     if (state.getState() == State.DATAREAD){
                         System.out.println(s);
                         state.setState(State.MESSAGESENT);
+
+                        //save the message
+                        state.setMessage(s);
                     }
+
+                    if(state.getState() == State.MESSSAGEREAD){
+                        if(s.contains("QUIT")){
+                            state.setState(State.QUITSENT);
+                            System.out.println("Received QUIT...Setting state to QUITSENT " + s);
+
+
+                        }
+                    }
+
 
                 }
 
 
                 if(key.isWritable()){
-                    //System.out.println("isWritable");
 
 
                     SocketChannel channel = (SocketChannel) key.channel();
@@ -212,7 +259,7 @@ public class Server {
 
 
                     //Wenn Client zum ersten mal connected, schicke eine Willkommensnachricht
-                    if(state.getState() == State.CONNECTED){ //CONNECTED:
+                    if(state.getState() == State.CONNECTED){ // CONNECTED:
 
                         //Willkommensnachricht wird nur einmal pro Client geschickt
                         sendMessage(channel, state.getByteBuffer(), WELCOMEMESSAGE+ "\r\n");
@@ -226,27 +273,40 @@ public class Server {
                     }
 
 
-                    if(state.getState() == State.HELOSENT){ //HELO:
+                    if(state.getState() == State.HELOSENT){ // HELO:
                         // Server bestätigt Client mit dem String 250
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
                         // OKMessage muss nur einmal gesendet werden
                         state.setState(State.HELOREAD);
                     }
 
-                    //System.exit(0);
-                    if(state.getState() == State.MAILFROMSENT){
+
+                    if(state.getState() == State.MAILFROMSENT){ // MAIL FROM:
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
                         state.setState(State.MAILFROMREAD);
                     }
 
-                    if(state.getState() == State.RCPTTOSENT){
+                    if(state.getState() == State.RCPTTOSENT){ // RCPT TO:
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
                         state.setState(State.RCPTTOREAD);
                     }
 
-                    if(state.getState() == State.DATASENT){
+                    if(state.getState() == State.DATASENT){ // DATA:
                         sendMessage(channel, state.getByteBuffer(),  STARTMAILINPUTMESSAGE+ "\r\n");
                         state.setState(State.DATAREAD);
+                    }
+
+
+                    if(state.getState() == State.MESSAGESENT){ // DATA END:
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
+                        state.setState(State.MESSSAGEREAD);
+                    }
+
+
+                    if(state.getState() == State.QUITSENT){
+                        sendMessage(channel, state.getByteBuffer(), CLOSINGMESSAGE + "\r\n");
+                        state.setState(State.DEAD);
+                        //channel.close();
                     }
                 }
 
@@ -254,6 +314,23 @@ public class Server {
                 iter.remove();
             }
         }
+    }
+
+    public static String getReceiverContent(String s) {
+        String content = "";
+        String[] arrOfStr = s.split("RCPT TO: ");
+        content = arrOfStr[1];
+
+        return content;
+    }
+
+    public static String getSenderContent(String s) {
+        String content = "";
+        String[] arrOfStr = s.split("MAIL FROM: ");
+        content = arrOfStr[1];
+
+
+        return content;
     }
 
     private static String readMessage(SocketChannel clientChannel, ByteBuffer byteBuffer) throws IOException {
@@ -309,8 +386,6 @@ public class Server {
         }
 
     }
-
-
 
     //Zu debugging-Zwecken
     private static void printBuffer(ByteBuffer buffer) {
