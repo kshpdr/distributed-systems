@@ -93,6 +93,10 @@ class State {
     public ByteBuffer getByteBuffer() {
         return byteBuffer;
     }
+
+    public void superClear(){
+        byteBuffer = ByteBuffer.allocate(8192);
+    }
 }
 
 public class Server {
@@ -228,6 +232,7 @@ public class Server {
 
                         //save the message
                         state.setMessage(s);
+                        state.superClear();
                     }
 
                     if(state.getState() == State.MESSSAGEREAD){
