@@ -139,6 +139,14 @@ public class Server {
                         }
                     }
 
+                    if (state.getState() == State.MAILFROMSENT){
+                        String s = readMessage(channel, state.getByteBuffer());
+                            if (s.contains("MAIL FROM")){
+                                state.setState(State.RCPTTOSENT);
+                                System.out.println("Received MAIL FROM...Setting state to RCTTOSENT " + s);
+                            }
+                    }
+
 
                     //Just EXIT for now, continue working on later
                     //System.exit(0);
@@ -171,8 +179,6 @@ public class Server {
                         //Willkommensnachricht wird nur einmal pro Client geschickt
                         sendMessage(channel, state.getByteBuffer(), WELCOMEMESSAGE+ "\r\n");
                         state.setState(State.RECEIVEDWELCOME);
-
-
                     }
 
 
@@ -194,8 +200,12 @@ public class Server {
                     }
 
                     //System.exit(0);
-
+                    if(state.getState() == State.RCPTTOSENT){
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
+                        state.setState(State.DATASENT);
+                    }
                 }
+
 
 
 
