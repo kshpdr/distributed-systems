@@ -147,12 +147,64 @@ public class Server {
 
                 }
 
+                if(key.isReadable()){
+                    State state = null;
+                    String s = read(key);
+                    SocketChannel channel = (SocketChannel) key.channel();
+
+                    System.out.println("Message received: " + s);
+                    Charset messageCharset = Charset.forName("US-ASCII");
+
+                    //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
+                    if (s.startsWith("HELO")){
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+                    }
+
+                    if (s.startsWith("MAIL FROM")){
+                        System.out.println(s.substring(11));
+                        byte[] from = s.substring(11).getBytes(messageCharset);
+                        state.setFrom(from);
+                        state.setState(State.MAILFROMRECEIVED);
+
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+                    }
+
+                    if (s.startsWith("HELP")){
+                        state.setState(State.HELPRECEIVED);
+                        sendMessage(channel, state.getByteBuffer(), HELPESSAGE.getBytes(messageCharset));
+                    }
+
+                    if (s.startsWith("RCPT TO:")){
+                        System.out.println(s.substring(9));
+                        byte[] to = s.substring(9).getBytes(messageCharset);
+                        state.setTo(to);
+                        state.setState(State.RCPTTORECEIVED);
+
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+                    }
+
+                    if (s.startsWith("DATA")){
+                        state.setState(State.DATARECEIVED);
+                        sendMessage(channel, state.getByteBuffer(), STARTMAILINPUTMESSAGE.getBytes(messageCharset));
+                    }
+
+                    if (state.getState() == State.DATARECEIVED) {
+                        if (s != "\n\r.\n\r"){
+                            state.extendMessageString(s);
+                        }
+                        else if (s == "\n\r.\n\r") {
+                            sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+                            state.setState(State.MESSAGERECEIVED);
+                        }
+                    }
+
+                }
+
                 if(key.isWritable()){
-                    //System.out.println("isWritable");
-
-
                     SocketChannel channel = (SocketChannel) key.channel();
                     State state = null;
+                    String s = read(key);
+                    Charset messageCharset = Charset.forName("US-ASCII");
 
                     //Wenn key schon ein Status bekommen hatte, dann speichere diesen, ansonsten gib dem key einen neuen Status
                     if(key.attachment() != null) {
@@ -172,68 +224,11 @@ public class Server {
                     }
 
                     //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
-//                    if (state.getState() == State.DATARECEIVED) {
-//                        readData(channel)
-//                    }
-                }
-
-
-
-                if(key.isReadable()){
-                    //System.out.println("isReadable");
-                    //maximale empfangen Byte-Anzahl
-                    ByteBuffer buf = ByteBuffer.allocate(8192);
-
-                    SocketChannel channel = (SocketChannel) key.channel();
-                    State state = null;
-
-                    channel.read(buf);
-                    //System.out.println("Test");
-                    buf.flip();
-
-
-                    //Choose translation standard
-                    Charset messageCharset = null;
-                    try {
-                        messageCharset = Charset.forName("US-ASCII");
-                    }catch (UnsupportedCharsetException e){
-                        e.printStackTrace();
-                    }
-
-
-                    //Decode incoming message
-                    CharsetDecoder decoder = messageCharset.newDecoder();
-
-                    CharBuffer charBuffer = null;
-                    try {
-                        charBuffer = decoder.decode(buf);
-                    }catch (CharacterCodingException e){
-                        e.printStackTrace();
-                    }
-
-                    String s = charBuffer.toString();
-
-                    if(key.attachment() != null) {
-                        state = (State) key.attachment();
-                    }else{
-                        state = new State();
-                        key.attach(state);
-                    }
-
-
-
-                    System.out.println("Message received: " + s);
-
-
-                    //Just EXIT for now, continue working on later
-                    //System.exit(0);
-
-                    //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
-                    if (s.contains("HELO")){
+                    if (s.startsWith("HELO")){
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
                     }
 
-                    if (s.contains("MAIL FROM")){
+                    if (s.startsWith("MAIL FROM")){
                         System.out.println(s.substring(11));
                         byte[] from = s.substring(11).getBytes(messageCharset);
                         state.setFrom(from);
@@ -242,12 +237,12 @@ public class Server {
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
                     }
 
-                    if (s.contains("HELP")){
+                    if (s.startsWith("HELP")){
                         state.setState(State.HELPRECEIVED);
                         sendMessage(channel, state.getByteBuffer(), HELPESSAGE.getBytes(messageCharset));
                     }
 
-                    if (s.contains("RCPT TO:")){
+                    if (s.startsWith("RCPT TO:")){
                         System.out.println(s.substring(9));
                         byte[] to = s.substring(9).getBytes(messageCharset);
                         state.setTo(to);
@@ -256,7 +251,7 @@ public class Server {
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
                     }
 
-                    if (s.contains("DATA")){
+                    if (s.startsWith("DATA")){
                         state.setState(State.DATARECEIVED);
                         sendMessage(channel, state.getByteBuffer(), STARTMAILINPUTMESSAGE.getBytes(messageCharset));
                     }
@@ -270,7 +265,6 @@ public class Server {
                             state.setState(State.MESSAGERECEIVED);
                         }
                     }
-
                 }
 
                 iter.remove();
@@ -280,6 +274,30 @@ public class Server {
     private static void getCommand(SocketChannel channel, ByteBuffer buffer) throws IOException {
         channel.read(buffer);
         printBuffer(buffer);
+    }
+
+    private static String read(SelectionKey key) throws IOException {
+        ByteBuffer buf = ByteBuffer.allocate(8192);
+        SocketChannel channel = (SocketChannel) key.channel();
+        channel.read(buf);
+        buf.flip();
+
+        Charset messageCharset = null;
+        try {
+            messageCharset = Charset.forName("US-ASCII");
+        }catch (UnsupportedCharsetException e){
+            e.printStackTrace();
+        }
+
+        CharsetDecoder decoder = messageCharset.newDecoder();
+        CharBuffer charBuffer = null;
+        try {
+            charBuffer = decoder.decode(buf);
+        }catch (CharacterCodingException e){
+            e.printStackTrace();
+        }
+
+        return charBuffer.toString();
     }
 
     private static void sendMessage(SocketChannel clientChannel, ByteBuffer buffer, byte [] message) throws IOException {
@@ -366,6 +384,4 @@ public class Server {
 
         buffer.limit(formerLimit);
     }
-
-
 }
