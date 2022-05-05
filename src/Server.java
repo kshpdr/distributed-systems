@@ -1,3 +1,5 @@
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
@@ -280,6 +282,9 @@ public class Server {
 
                     if(state.getState() == State.HELPSENT){
                         sendMessage(channel, state.getByteBuffer(), HELPMESSAGE + "\r\n");
+
+                        //nuke
+                        state.superClear();
                         state.setState(state.getPreviousState());
                     }
 
@@ -335,9 +340,41 @@ public class Server {
         Random rand = new Random();
         int messengerID = rand.nextInt(10000);
 
+        try {
+            Files.createDirectories(Paths.get("D:/Code/Java/DSMTP/vs_uebung_1_gruppe_1/src/emails/" + receiver));
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        try {
+            File file = new File("D:/Code/Java/DSMTP/vs_uebung_1_gruppe_1/src/emails/" + receiver  + "/" + sender + "_" + messengerID + ".txt");
+            file.createNewFile();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+
+        ByteBuffer buf = ByteBuffer.allocate(8192);
+        buf.put(message.getBytes(StandardCharsets.US_ASCII));
+        buf.flip();
+
+        FileOutputStream f;
+        f = new FileOutputStream("D:/Code/Java/DSMTP/vs_uebung_1_gruppe_1/src/emails/" + receiver  + "/" + sender + "_" + messengerID + ".txt");
+        FileChannel ch = f.getChannel();
+
+        ch.write(buf);
+
+        ch.close();
+
+        buf.clear();
+
+
+        /*
         try{
             //Create Directory
-            Path p = Paths.get("/home/hanna/Dropbox/Uni/VS_Hausaufgaben/vs_uebung_1_gruppe_1/src/emails/" + receiver);
+            Path p = Paths.get("D:/Code/Java/DSMTP/vs_uebung_1_gruppe_1/src/emails/" + receiver);
             if(!Files.exists(p)){
                 Path path = Files.createDirectories(p);
             }
@@ -346,25 +383,37 @@ public class Server {
             if(!Files.exists(d)){
                 Files.createFile(d);
             }
+
+
             //Put message in File
             Files.write(d, message.getBytes());
         }catch (Exception e){
             e.printStackTrace();
         }
+
+
+         */
     }
 
     public static String getReceiverContent(String s) {
+        String contentWithRN = "";
         String content = "";
-        String[] arrOfStr = s.split("RCPT TO: ");
-        content = arrOfStr[1];
+        String[] arrOfStrRN = s.split("RCPT TO: ");
+        contentWithRN = arrOfStrRN[1];
+        String[] arrOfStr = contentWithRN.split("\r\n");
+        content = arrOfStr[0];
+
 
         return content;
     }
 
     public static String getSenderContent(String s) {
+        String contentWithRN = "";
         String content = "";
-        String[] arrOfStr = s.split("MAIL FROM: ");
-        content = arrOfStr[1];
+        String[] arrOfStrRN = s.split("MAIL FROM: ");
+        contentWithRN = arrOfStrRN[1];
+        String[] arrOfStr = contentWithRN.split("\r\n");
+        content = arrOfStr[0];
 
 
         return content;
