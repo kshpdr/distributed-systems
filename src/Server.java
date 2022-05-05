@@ -108,7 +108,7 @@ public class Server {
     public final static String CLOSINGMESSAGE = "221 ";
     public final static String STARTMAILINPUTMESSAGE = "354 ";
     public final static String HELPMESSAGE =
-            "214 " +
+            "214 \n" +
             "HELO: initiate MAIL\n" +
             "MAIL FROM:<sender@example.org> : provide sender-address\n" +
             "RCPT TO:<receiver@example.com> : provide receiver-address\n" +
@@ -187,7 +187,7 @@ public class Server {
 
 
                     String s = readMessage(channel, state.getByteBuffer());
-                    if(s.contains("HELP")){
+                    if(s.startsWith("HELP")){
                         state.setState(State.HELPSENT);
                         System.out.println("Received HELP...Setting state to HELPSENT " + s);
                     }
@@ -199,14 +199,14 @@ public class Server {
 
                         //HELO
                         //Bestätigung HELO Client
-                        if (s.contains("HELO")) {
+                        if (s.startsWith("HELO")) {
                             state.setState(State.HELOSENT);
                             System.out.println("Received HELO...Setting state to HELOSENT " + s);
                         }
                     }
 
                     if (state.getState() == State.HELOREAD){
-                            if (s.contains("MAIL FROM")){
+                            if (s.startsWith("MAIL FROM")){
                                 state.setState(State.MAILFROMSENT);
                                 System.out.println("Received MAIL FROM...Setting state to MAILFROMSENT " + s);
 
@@ -217,7 +217,7 @@ public class Server {
                     }
 
                     if (state.getState() == State.MAILFROMREAD){
-                        if (s.contains("RCPT TO")){
+                        if (s.startsWith("RCPT TO")){
                             state.setState(State.RCPTTOSENT);
                             System.out.println("Received RCPT TO...Setting state to RCPTTO " + s);
 
@@ -228,7 +228,7 @@ public class Server {
                     }
 
                     if (state.getState() == State.RCPTTOREAD){
-                        if (s.contains("DATA")){
+                        if (s.startsWith("DATA")){
                             state.setState(State.DATASENT);
                             System.out.println("Received DATASENT...Setting state to DATA " + s);
                         }
@@ -244,7 +244,7 @@ public class Server {
                     }
 
                     if(state.getState() == State.MESSSAGEREAD){
-                        if(s.contains("QUIT")){
+                        if(s.startsWith("QUIT")){
                             state.setState(State.QUITSENT);
                             System.out.println("Received QUIT...Setting state to QUITSENT " + s);
 
@@ -285,7 +285,7 @@ public class Server {
 
                         //nuke
                         state.superClear();
-                        state.setState(state.getPreviousState());
+                        state.setState(state.RECEIVEDWELCOME);
                     }
 
 
@@ -341,14 +341,14 @@ public class Server {
         int messengerID = rand.nextInt(10000);
 
         try {
-            Files.createDirectories(Paths.get("D:/Code/Java/DSMTP/vs_uebung_1_gruppe_1/src/emails/" + receiver));
+            Files.createDirectories(Paths.get("emails/" + receiver));
 
         }catch (Exception e){
             e.printStackTrace();
         }
 
         try {
-            File file = new File("D:/Code/Java/DSMTP/vs_uebung_1_gruppe_1/src/emails/" + receiver  + "/" + sender + "_" + messengerID + ".txt");
+            File file = new File("emails/" + receiver  + "/" + sender + "_" + messengerID + ".txt");
             file.createNewFile();
         }catch (Exception e){
             e.printStackTrace();
@@ -361,7 +361,7 @@ public class Server {
         buf.flip();
 
         FileOutputStream f;
-        f = new FileOutputStream("D:/Code/Java/DSMTP/vs_uebung_1_gruppe_1/src/emails/" + receiver  + "/" + sender + "_" + messengerID + ".txt");
+        f = new FileOutputStream("emails/" + receiver  + "/" + sender + "_" + messengerID + ".txt");
         FileChannel ch = f.getChannel();
 
         ch.write(buf);
