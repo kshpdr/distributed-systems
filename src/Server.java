@@ -83,7 +83,7 @@ class State {
     }
 
     public void setState(int state){
-        if(previousState != State.HELPSENT){
+        if(this.state != HELPSENT){
             previousState = this.state;
         }
 
@@ -108,7 +108,7 @@ public class Server {
     public final static String CLOSINGMESSAGE = "221 ";
     public final static String STARTMAILINPUTMESSAGE = "354 ";
     public final static String HELPMESSAGE =
-            "214 " +
+            "214 \n" +
             "HELO: initiate MAIL\n" +
             "MAIL FROM:<sender@example.org> : provide sender-address\n" +
             "RCPT TO:<receiver@example.com> : provide receiver-address\n" +
@@ -319,7 +319,7 @@ public class Server {
                     }
 
 
-                    if(state.getState() == State.QUITSENT){
+                    if(state.getState() == State.QUITSENT){ // DIE:
                         sendMessage(channel, state.getByteBuffer(), CLOSINGMESSAGE + "\r\n");
                         state.setState(State.DEAD);
                         channel.close();
