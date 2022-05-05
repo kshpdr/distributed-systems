@@ -285,7 +285,7 @@ public class Server {
 
                         //nuke
                         state.superClear();
-                        state.setState(state.RECEIVEDWELCOME);
+                        state.setState(state.getPreviousState());
                     }
 
 
