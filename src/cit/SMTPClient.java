@@ -7,8 +7,6 @@ package cit;
  * 
  */
 
-import de.tu_berlin.cit.SMTPClientState;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -514,7 +512,7 @@ public class SMTPClient {
 						SMTPClientState state = (SMTPClientState) key.attachment();
 						SocketChannel channel = (SocketChannel) key.channel();
 						
-						if(readCommandLine(channel, state.getByteBuffer()))
+						if(!readCommandLine(channel, state.getByteBuffer()))
 							continue;
 						
 						
