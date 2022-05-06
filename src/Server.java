@@ -280,7 +280,7 @@ public class Server {
                         sendMessage(channel, state.getByteBuffer(), HELPMESSAGE + "\r\n");
 
                         //nuke
-                        //state.superClear();
+                        state.superClear();
                         state.setState(state.getPreviousState());
                     }
 
