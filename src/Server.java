@@ -187,10 +187,6 @@ public class Server {
 
 
                     String s = readMessage(channel, state.getByteBuffer());
-                    if(s.startsWith("HELP")){
-                        state.setState(State.HELPSENT);
-                        System.out.println("Received HELP...Setting state to HELPSENT " + s);
-                    }
 
                     if (state.getState() == State.RECEIVEDWELCOME) {
 
@@ -237,6 +233,13 @@ public class Server {
                         //save the message
                         state.setMessage(s);
                         state.superClear();
+                    }
+
+                    if(s.startsWith("HELP")){
+                        if (state.getState() != State.MESSAGESENT){
+                            state.setState(State.HELPSENT);
+                            System.out.println("Received HELP...Setting state to HELPSENT " + s);
+                        }
                     }
 
                     if(state.getState() == State.MESSSAGEREAD){

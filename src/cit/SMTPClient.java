@@ -590,7 +590,7 @@ public class SMTPClient {
 							break;
 						case SMTPClientState.MAILFROMSENT:
 							if(responseCode == 250) {
-								if(sendHelpNext()) {
+								if(true) {
 									sendHelp(channel, state.getByteBuffer());
 									state.setPreviousState(state.getState());
 									state.setState(SMTPClientState.HELPSENT);									
