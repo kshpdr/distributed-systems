@@ -120,11 +120,6 @@ public class Server {
 
 
     public static void main(String[] args) throws Exception {
-
-
-
-
-
         //initialisiere Selektor, Server-Socket
         Selector selector = Selector.open();
         ServerSocketChannel serverSocket = ServerSocketChannel.open();
@@ -132,7 +127,6 @@ public class Server {
         //Binde Server-Socket and "localhost" in Port 8192
         serverSocket.bind(new InetSocketAddress("localhost", 8192));
         serverSocket.configureBlocking(false);
-
 
         //Registriere Server-Socket auf Selektor und höre auf das Event: "OP_ACCEPT"
         try {
@@ -142,16 +136,13 @@ public class Server {
             System.exit(1);
         }
 
-
         //Lasse den Server laufen
         while(true){
-
 
             //Fahre fort, wenn keine Elemente im Ready-Set sind
             if(selector.select() == 0){
                 continue;
             }
-
 
             //Sammle alle keys
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
@@ -161,7 +152,6 @@ public class Server {
             while(iter.hasNext()){
                 SelectionKey key = iter.next();
 
-
                 if(key.isAcceptable()){
                     ServerSocketChannel serverSocketChannel = (ServerSocketChannel) key.channel();
                     SocketChannel client = serverSocketChannel.accept();
@@ -170,7 +160,6 @@ public class Server {
 
 
                 }
-
 
                 if(key.isReadable()){
 
@@ -185,35 +174,25 @@ public class Server {
                         key.attach(state);
                     }
 
-
                     String s = readMessage(channel, state.getByteBuffer());
                     if(s.startsWith("HELP")){
                         state.setState(State.HELPSENT);
                         System.out.println("Received HELP...Setting state to HELPSENT " + s);
                     }
 
-                    if (state.getState() == State.RECEIVEDWELCOME) {
 
-                        System.out.println("Message received: " + s);
-
-
-                        //HELO
-                        //Bestätigung HELO Client
-                        if (s.startsWith("HELO")) {
-                            state.setState(State.HELOSENT);
-                            System.out.println("Received HELO...Setting state to HELOSENT " + s);
-                        }
+                    if (s.startsWith("HELO")) {
+                        state.setState(State.HELOSENT);
+                        System.out.println("Received HELO...Setting state to HELOSENT " + s);
                     }
 
-                    if (state.getState() == State.HELOREAD){
-                            if (s.startsWith("MAIL FROM")){
-                                state.setState(State.MAILFROMSENT);
-                                System.out.println("Received MAIL FROM...Setting state to MAILFROMSENT " + s);
+                    if (s.startsWith("MAIL FROM")){
+                        state.setState(State.MAILFROMSENT);
+                        System.out.println("Received MAIL FROM...Setting state to MAILFROMSENT " + s);
 
-                                //save the sender-address
-                                String content = getSenderContent(s);
-                                state.setSender(content);
-                            }
+                        //save the sender-address
+                        String content = getSenderContent(s);
+                        state.setSender(content);
                     }
 
                     if (state.getState() == State.MAILFROMREAD){
@@ -243,16 +222,10 @@ public class Server {
                         state.superClear();
                     }
 
-                    if(state.getState() == State.MESSSAGEREAD){
-                        if(s.startsWith("QUIT")){
-                            state.setState(State.QUITSENT);
-                            System.out.println("Received QUIT...Setting state to QUITSENT " + s);
-
-
-                        }
+                    if(s.startsWith("QUIT")) {
+                        state.setState(State.QUITSENT);
+                        System.out.println("Received QUIT...Setting state to QUITSENT " + s);
                     }
-
-
                 }
 
 
