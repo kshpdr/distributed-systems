@@ -109,11 +109,11 @@ public class Server {
     public final static String STARTMAILINPUTMESSAGE = "354 ";
     public final static String HELPMESSAGE =
             "214 \n" +
-            "HELO: initiate MAIL\n" +
-            "MAIL FROM:<sender@example.org> : provide sender-address\n" +
-            "RCPT TO:<receiver@example.com> : provide receiver-address\n" +
-            "DATA: initiate writing\n" +
-            "QUIT: close the connection\n";
+                    "HELO: initiate MAIL\n" +
+                    "MAIL FROM:<sender@example.org> : provide sender-address\n" +
+                    "RCPT TO:<receiver@example.com> : provide receiver-address\n" +
+                    "DATA: initiate writing\n" +
+                    "QUIT: close the connection\n";
 
 
 
@@ -205,26 +205,22 @@ public class Server {
                         }
                     }
 
-                    if (state.getState() == State.HELOREAD){
-                            if (s.startsWith("MAIL FROM")){
-                                state.setState(State.MAILFROMSENT);
-                                System.out.println("Received MAIL FROM...Setting state to MAILFROMSENT " + s);
+                    if (s.startsWith("MAIL FROM")){
+                        state.setState(State.MAILFROMSENT);
+                        System.out.println("Received MAIL FROM...Setting state to MAILFROMSENT " + s);
 
-                                //save the sender-address
-                                String content = getSenderContent(s);
-                                state.setSender(content);
-                            }
+                        //save the sender-address
+                        String content = getSenderContent(s);
+                        state.setSender(content);
                     }
 
-                    if (state.getState() == State.MAILFROMREAD){
-                        if (s.startsWith("RCPT TO")){
-                            state.setState(State.RCPTTOSENT);
-                            System.out.println("Received RCPT TO...Setting state to RCPTTO " + s);
+                    if (s.startsWith("RCPT TO")){
+                        state.setState(State.RCPTTOSENT);
+                        System.out.println("Received RCPT TO...Setting state to RCPTTO " + s);
 
-                            //save the receiver-address
-                            String content = getReceiverContent(s);
-                            state.setReceiver(content);
-                        }
+                        //save the receiver-address
+                        String content = getReceiverContent(s);
+                        state.setReceiver(content);
                     }
 
                     if (state.getState() == State.RCPTTOREAD){
@@ -284,7 +280,7 @@ public class Server {
                         sendMessage(channel, state.getByteBuffer(), HELPMESSAGE + "\r\n");
 
                         //nuke
-                        state.superClear();
+                        //state.superClear();
                         state.setState(state.getPreviousState());
                     }
 
@@ -316,6 +312,7 @@ public class Server {
                     if(state.getState() == State.MESSAGESENT){ // DATA END:
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
                         state.setState(State.MESSSAGEREAD);
+                        saveEmail(state.getSender(), state.getReceiver(), state.getMessage());
                     }
 
 
@@ -323,9 +320,6 @@ public class Server {
                         sendMessage(channel, state.getByteBuffer(), CLOSINGMESSAGE + "\r\n");
                         state.setState(State.DEAD);
                         channel.close();
-
-
-                        saveEmail(state.getSender(), state.getReceiver(), state.getMessage());
                     }
                 }
 
