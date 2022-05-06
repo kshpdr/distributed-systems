@@ -1,96 +1,129 @@
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
 import java.nio.*;
 import java.nio.channels.*;
 import java.nio.charset.*;
+import java.nio.file.Files;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Set;
-
+import java.util.Random;
+import java.nio.file.*;
 
 
 
 
 class State {
     public final static int CONNECTED = 0;
-    public final static int SENTWELCOME = 1;
-    public final static int MAILFROMRECEIVED = 2;
-    public final static int RCPTTORECEIVED = 3;
-    public final static int DATARECEIVED = 4;
-    public final static int MESSAGERECEIVED = 5;
-    public final static int QUITSENT = 6;
-    public final static int HELPRECEIVED = 7;
+    public final static int RECEIVEDWELCOME = 1;
+    public final static int HELOSENT = 2;
+    public final static int HELOREAD = 3;
+    public final static int MAILFROMSENT = 4;
+    public final static int MAILFROMREAD = 5;
+    public final static int RCPTTOSENT = 6;
+    public final static int RCPTTOREAD = 7;
+    public final static int DATASENT = 8;
+    public final static int DATAREAD = 9;
+    public final static int MESSAGESENT = 10;
+    public final static int MESSSAGEREAD = 11;
+    public final static int QUITSENT = 12;
+    public final static int DEAD = 13;
+    public final static int HELPSENT = 14;
 
     private int state;
-    private ByteBuffer byteBuffer;
     private int previousState;
-    private byte [] from;
-    private byte [] to;
-    private byte [] message;
-    private String messageString = "";
+    private ByteBuffer byteBuffer;
+
+    private String sender;
+    private String receiver;
+    private String message;
 
     public State(){
         this.state = CONNECTED;
-        this.byteBuffer = ByteBuffer.allocate(8);
+        this.previousState = CONNECTED;
+        this.byteBuffer = ByteBuffer.allocate(8192);
+        this.sender = "";
+        this.receiver = "";
+        this.message = "";
+    }
+
+    public String getSender() {
+        return sender;
+    }
+
+    public void setSender(String sender) {
+        this.sender = sender;
+    }
+
+    public String getReceiver() {
+        return receiver;
+    }
+
+    public void setReceiver(String receiver) {
+        this.receiver = receiver;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
     }
 
     public int getState(){
         return this.state;
     }
 
+    public int getPreviousState(){
+        return previousState;
+    }
+
     public void setState(int state){
+        if(this.state != HELPSENT){
+            previousState = this.state;
+        }
+
         this.state = state;
+
     }
 
     public ByteBuffer getByteBuffer() {
         return byteBuffer;
     }
 
-    public byte[] getFrom() {
-        return from;
-    }
-
-    public void setFrom(byte[] from) {
-        this.from = from;
-    }
-
-    public byte[] getTo() {
-        return to;
-    }
-
-    public void setTo(byte[] to) {
-        this.to = to;
-    }
-
-    public byte[] getMessage() {
-        return message;
-    }
-
-    public void setMessage(byte[] message) {
-        this.message = message;
-    }
-
-    public void extendMessageString(String messageString) {this.messageString += messageString;}
-
-    public int getPreviousState() {
-        return previousState;
-    }
-
-    public void setPreviousState(int previousState) {
-        this.previousState = previousState;
+    public void superClear(){
+        byteBuffer = ByteBuffer.allocate(8192);
     }
 }
 
 public class Server {
 
-    public final static String HELPESSAGE = "214 \r\n";
-    public final static String WELCOMEMESSAGE = "220 \r\n";
-    public final static String OKMESSAGE = "250 \r\n";
-    public final static String CLOSINGMESSAGE = "221 \r\n";
-    public final static String STARTMAILINPUTMESSAGE = "354 \r\n";
+
+    public final static String WELCOMEMESSAGE = "220 ";
+    public final static String OKMESSAGE = "250 ";
+    public final static String CLOSINGMESSAGE = "221 ";
+    public final static String STARTMAILINPUTMESSAGE = "354 ";
+    public final static String HELPMESSAGE =
+            "214 \n" +
+            "HELO: initiate MAIL\n" +
+            "MAIL FROM:<sender@example.org> : provide sender-address\n" +
+            "RCPT TO:<receiver@example.com> : provide receiver-address\n" +
+            "DATA: initiate writing\n" +
+            "QUIT: close the connection\n";
 
 
-    public static void main(String[] args) throws IOException {
+
+
+
+    public static void main(String[] args) throws Exception {
+
+
+
+
 
         //initialisiere Selektor, Server-Socket
         Selector selector = Selector.open();
@@ -124,12 +157,9 @@ public class Server {
             Set<SelectionKey> selectedKeys = selector.selectedKeys();
             Iterator<SelectionKey> iter = selectedKeys.iterator();
 
-            //arbeite jedes key ab
+            //arbeite jeden key ab
             while(iter.hasNext()){
                 SelectionKey key = iter.next();
-//                System.out.println(key.toString());
-//                System.out.println(key.interestOps());
-//                System.out.println(key.readyOps());
 
 
                 if(key.isAcceptable()){
@@ -139,72 +169,98 @@ public class Server {
                     client.register(selector, SelectionKey.OP_READ | SelectionKey.OP_WRITE);
 
 
-                    //Speichere den Status jedes Keys ab, um zu unterscheiden
-                    State state = new State();
-                    key.attach(state);
-
-                    System.out.println("Connection established");
-
                 }
+
 
                 if(key.isReadable()){
-                    State state = null;
-                    String s = read(key);
+
                     SocketChannel channel = (SocketChannel) key.channel();
+                    State state = null;
 
-                    System.out.println("Message received: " + s);
-                    Charset messageCharset = Charset.forName("US-ASCII");
-
-                    //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
-                    if (s.startsWith("HELO")){
-                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+                    //Wenn key schon ein Status bekommen hatte, dann speichere diesen, ansonsten gib dem key einen neuen Status
+                    if(key.attachment() != null) {
+                        state = (State) key.attachment();
+                    }else {
+                        state = new State();
+                        key.attach(state);
                     }
 
-                    if (s.startsWith("MAIL FROM")){
-                        System.out.println(s.substring(11));
-                        byte[] from = s.substring(11).getBytes(messageCharset);
-                        state.setFrom(from);
-                        state.setState(State.MAILFROMRECEIVED);
 
-                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+                    String s = readMessage(channel, state.getByteBuffer());
+                    if(s.startsWith("HELP")){
+                        state.setState(State.HELPSENT);
+                        System.out.println("Received HELP...Setting state to HELPSENT " + s);
                     }
 
-                    if (s.startsWith("HELP")){
-                        state.setState(State.HELPRECEIVED);
-                        sendMessage(channel, state.getByteBuffer(), HELPESSAGE.getBytes(messageCharset));
-                    }
+                    if (state.getState() == State.RECEIVEDWELCOME) {
 
-                    if (s.startsWith("RCPT TO:")){
-                        System.out.println(s.substring(9));
-                        byte[] to = s.substring(9).getBytes(messageCharset);
-                        state.setTo(to);
-                        state.setState(State.RCPTTORECEIVED);
+                        System.out.println("Message received: " + s);
 
-                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
-                    }
 
-                    if (s.startsWith("DATA")){
-                        state.setState(State.DATARECEIVED);
-                        sendMessage(channel, state.getByteBuffer(), STARTMAILINPUTMESSAGE.getBytes(messageCharset));
-                    }
-
-                    if (state.getState() == State.DATARECEIVED) {
-                        if (s != "\n\r.\n\r"){
-                            state.extendMessageString(s);
-                        }
-                        else if (s == "\n\r.\n\r") {
-                            sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
-                            state.setState(State.MESSAGERECEIVED);
+                        //HELO
+                        //Bestätigung HELO Client
+                        if (s.startsWith("HELO")) {
+                            state.setState(State.HELOSENT);
+                            System.out.println("Received HELO...Setting state to HELOSENT " + s);
                         }
                     }
+
+                    if (state.getState() == State.HELOREAD){
+                            if (s.startsWith("MAIL FROM")){
+                                state.setState(State.MAILFROMSENT);
+                                System.out.println("Received MAIL FROM...Setting state to MAILFROMSENT " + s);
+
+                                //save the sender-address
+                                String content = getSenderContent(s);
+                                state.setSender(content);
+                            }
+                    }
+
+                    if (state.getState() == State.MAILFROMREAD){
+                        if (s.startsWith("RCPT TO")){
+                            state.setState(State.RCPTTOSENT);
+                            System.out.println("Received RCPT TO...Setting state to RCPTTO " + s);
+
+                            //save the receiver-address
+                            String content = getReceiverContent(s);
+                            state.setReceiver(content);
+                        }
+                    }
+
+                    if (state.getState() == State.RCPTTOREAD){
+                        if (s.startsWith("DATA")){
+                            state.setState(State.DATASENT);
+                            System.out.println("Received DATASENT...Setting state to DATA " + s);
+                        }
+                    }
+
+                    if (state.getState() == State.DATAREAD){
+                        System.out.println(s);
+                        state.setState(State.MESSAGESENT);
+
+                        //save the message
+                        state.setMessage(s);
+                        state.superClear();
+                    }
+
+                    if(state.getState() == State.MESSSAGEREAD){
+                        if(s.startsWith("QUIT")){
+                            state.setState(State.QUITSENT);
+                            System.out.println("Received QUIT...Setting state to QUITSENT " + s);
+
+
+                        }
+                    }
+
 
                 }
 
+
                 if(key.isWritable()){
+
+
                     SocketChannel channel = (SocketChannel) key.channel();
                     State state = null;
-                    String s = read(key);
-                    Charset messageCharset = Charset.forName("US-ASCII");
 
                     //Wenn key schon ein Status bekommen hatte, dann speichere diesen, ansonsten gib dem key einen neuen Status
                     if(key.attachment() != null) {
@@ -216,72 +272,164 @@ public class Server {
 
 
                     //Wenn Client zum ersten mal connected, schicke eine Willkommensnachricht
-                    if(state.getState() == State.CONNECTED){ //CONNECTED:
-                        //TODO: Sende "220" an den Client
-                        sendOpeningMessage(channel, state.getByteBuffer());
-                        state.setState(State.SENTWELCOME);
-                        getCommand(channel, state.getByteBuffer());
+                    if(state.getState() == State.CONNECTED){ // CONNECTED:
+
+                        //Willkommensnachricht wird nur einmal pro Client geschickt
+                        sendMessage(channel, state.getByteBuffer(), WELCOMEMESSAGE+ "\r\n");
+                        state.setState(State.RECEIVEDWELCOME);
                     }
 
-                    //TODO: HELO, MAIL FROM, RCPT TO, DATA, QUIT, HELP missing
-                    if (s.startsWith("HELO")){
-                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+
+                    if(state.getState() == State.HELPSENT){
+                        sendMessage(channel, state.getByteBuffer(), HELPMESSAGE + "\r\n");
+
+                        //nuke
+                        state.superClear();
+                        state.setState(state.getPreviousState());
                     }
 
-                    if (s.startsWith("MAIL FROM")){
-                        System.out.println(s.substring(11));
-                        byte[] from = s.substring(11).getBytes(messageCharset);
-                        state.setFrom(from);
-                        state.setState(State.MAILFROMRECEIVED);
 
-                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+                    if(state.getState() == State.HELOSENT){ // HELO:
+                        // Server bestätigt Client mit dem String 250
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
+                        // OKMessage muss nur einmal gesendet werden
+                        state.setState(State.HELOREAD);
                     }
 
-                    if (s.startsWith("HELP")){
-                        state.setState(State.HELPRECEIVED);
-                        sendMessage(channel, state.getByteBuffer(), HELPESSAGE.getBytes(messageCharset));
+
+                    if(state.getState() == State.MAILFROMSENT){ // MAIL FROM:
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
+                        state.setState(State.MAILFROMREAD);
                     }
 
-                    if (s.startsWith("RCPT TO:")){
-                        System.out.println(s.substring(9));
-                        byte[] to = s.substring(9).getBytes(messageCharset);
-                        state.setTo(to);
-                        state.setState(State.RCPTTORECEIVED);
-
-                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
+                    if(state.getState() == State.RCPTTOSENT){ // RCPT TO:
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
+                        state.setState(State.RCPTTOREAD);
                     }
 
-                    if (s.startsWith("DATA")){
-                        state.setState(State.DATARECEIVED);
-                        sendMessage(channel, state.getByteBuffer(), STARTMAILINPUTMESSAGE.getBytes(messageCharset));
+                    if(state.getState() == State.DATASENT){ // DATA:
+                        sendMessage(channel, state.getByteBuffer(),  STARTMAILINPUTMESSAGE+ "\r\n");
+                        state.setState(State.DATAREAD);
                     }
 
-                    if (state.getState() == State.DATARECEIVED) {
-                        if (s != "\n\r.\n\r"){
-                            state.extendMessageString(s);
-                        }
-                        else if (s == "\n\r.\n\r") {
-                            sendMessage(channel, state.getByteBuffer(), OKMESSAGE.getBytes(messageCharset));
-                            state.setState(State.MESSAGERECEIVED);
-                        }
+
+                    if(state.getState() == State.MESSAGESENT){ // DATA END:
+                        sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
+                        state.setState(State.MESSSAGEREAD);
+                    }
+
+
+                    if(state.getState() == State.QUITSENT){ // DIE:
+                        sendMessage(channel, state.getByteBuffer(), CLOSINGMESSAGE + "\r\n");
+                        state.setState(State.DEAD);
+                        channel.close();
+
+
+                        saveEmail(state.getSender(), state.getReceiver(), state.getMessage());
                     }
                 }
+
 
                 iter.remove();
             }
         }
     }
-    private static void getCommand(SocketChannel channel, ByteBuffer buffer) throws IOException {
-        channel.read(buffer);
-        printBuffer(buffer);
-    }
 
-    private static String read(SelectionKey key) throws IOException {
+    private static void saveEmail(String sender, String receiver, String message) throws Exception{
+        // Random Zahl für Messenger ID
+        Random rand = new Random();
+        int messengerID = rand.nextInt(10000);
+
+        try {
+            Files.createDirectories(Paths.get("emails/" + receiver));
+
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+        try {
+            File file = new File("emails/" + receiver  + "/" + sender + "_" + messengerID + ".txt");
+            file.createNewFile();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+
         ByteBuffer buf = ByteBuffer.allocate(8192);
-        SocketChannel channel = (SocketChannel) key.channel();
-        channel.read(buf);
+        buf.put(message.getBytes(StandardCharsets.US_ASCII));
         buf.flip();
 
+        FileOutputStream f;
+        f = new FileOutputStream("emails/" + receiver  + "/" + sender + "_" + messengerID + ".txt");
+        FileChannel ch = f.getChannel();
+
+        ch.write(buf);
+
+        ch.close();
+
+        buf.clear();
+
+
+        /*
+        try{
+            //Create Directory
+            Path p = Paths.get("D:/Code/Java/DSMTP/vs_uebung_1_gruppe_1/src/emails/" + receiver);
+            if(!Files.exists(p)){
+                Path path = Files.createDirectories(p);
+            }
+            //Create File
+            Path d = Paths.get(p + "/" + sender + "_" + messengerID + ".txt");
+            if(!Files.exists(d)){
+                Files.createFile(d);
+            }
+
+
+            //Put message in File
+            Files.write(d, message.getBytes());
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+
+
+         */
+    }
+
+    public static String getReceiverContent(String s) {
+        String contentWithRN = "";
+        String content = "";
+        String[] arrOfStrRN = s.split("RCPT TO: ");
+        contentWithRN = arrOfStrRN[1];
+        String[] arrOfStr = contentWithRN.split("\r\n");
+        content = arrOfStr[0];
+
+
+        return content;
+    }
+
+    public static String getSenderContent(String s) {
+        String contentWithRN = "";
+        String content = "";
+        String[] arrOfStrRN = s.split("MAIL FROM: ");
+        contentWithRN = arrOfStrRN[1];
+        String[] arrOfStr = contentWithRN.split("\r\n");
+        content = arrOfStr[0];
+
+
+        return content;
+    }
+
+
+
+    private static String readMessage(SocketChannel clientChannel, ByteBuffer byteBuffer) throws IOException {
+        String s = "";
+
+        clientChannel.read(byteBuffer);
+        //System.out.println("Test");
+        byteBuffer.flip();
+
+
+        //Choose translation standard
         Charset messageCharset = null;
         try {
             messageCharset = Charset.forName("US-ASCII");
@@ -289,50 +437,35 @@ public class Server {
             e.printStackTrace();
         }
 
+
+        //Decode incoming message
         CharsetDecoder decoder = messageCharset.newDecoder();
+
         CharBuffer charBuffer = null;
         try {
-            charBuffer = decoder.decode(buf);
+            charBuffer = decoder.decode(byteBuffer);
         }catch (CharacterCodingException e){
             e.printStackTrace();
         }
 
-        return charBuffer.toString();
+        s = charBuffer.toString();
+
+        return s;
     }
 
-    private static void sendMessage(SocketChannel clientChannel, ByteBuffer buffer, byte [] message) throws IOException {
-
-        buffer.clear();
-
-        buffer.put(message);
-        buffer.flip();
-
-        clientChannel.write(buffer);
-
-        buffer.clear();
-    }
-
-
-    private static void sendOpeningMessage(SocketChannel clientChannel, ByteBuffer byteBuffer) throws UnsupportedEncodingException {
-
-        //Encode String zu Bytes
+    private static void sendMessage(SocketChannel clientChannel, ByteBuffer byteBuffer, String message) throws UnsupportedEncodingException{
         try {
             byteBuffer.clear();
-            byte[] bytes = WELCOMEMESSAGE.getBytes("US-ASCII");
+            byte[] bytes = message.getBytes("US-ASCII");
             byteBuffer.put(bytes);
         }catch (UnsupportedEncodingException e){
             e.printStackTrace();
         }
 
-
         //Verschicke die Bytes
         try {
-            System.out.print("Sent: ");
-            printBuffer(byteBuffer);
             byteBuffer.flip();
-
             clientChannel.write(byteBuffer);
-
             //channel.close();
             byteBuffer.clear();
             //System.out.println("Message sent");
@@ -340,10 +473,7 @@ public class Server {
             e.printStackTrace();
         }
 
-
     }
-
-
 
     //Zu debugging-Zwecken
     private static void printBuffer(ByteBuffer buffer) {
@@ -384,4 +514,6 @@ public class Server {
 
         buffer.limit(formerLimit);
     }
+
+
 }

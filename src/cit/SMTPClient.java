@@ -7,8 +7,6 @@ package cit;
  * 
  */
 
-import de.tu_berlin.cit.SMTPClientState;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -495,9 +493,8 @@ public class SMTPClient {
 				
 				SelectionKey key = iter.next();
 				
-//				System.out.println(key.toString());
-//				System.out.println(key.readyOps());
-//				System.out.println(key.interestOps());
+				/*System.out.println(key.toString());
+				System.out.println(key.readyOps());*/
 				
 				try {
 					
