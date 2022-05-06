@@ -32,6 +32,7 @@ class State {
     public final static int QUITSENT = 12;
     public final static int DEAD = 13;
     public final static int HELPSENT = 14;
+    public final static int DATAREADING = 15;
 
     private int state;
     private int previousState;
@@ -71,7 +72,7 @@ class State {
     }
 
     public void setMessage(String message) {
-        this.message = message;
+        this.message += message;
     }
 
     public int getState(){
@@ -213,6 +214,17 @@ public class Server {
                         }
                     }
 
+                    if (state.getState() == State.DATAREADING) {
+                        System.out.println(s);
+                        if (s == "\r\n.\r\n"){
+                            state.setState(State.DATAREAD);
+                            return;
+                        }
+                        else{
+                            state.setMessage(s);
+                        }
+                    }
+
                     if (state.getState() == State.DATAREAD){
                         System.out.println(s);
                         state.setState(State.MESSAGESENT);
@@ -282,13 +294,14 @@ public class Server {
 
                     if(state.getState() == State.DATASENT){ // DATA:
                         sendMessage(channel, state.getByteBuffer(),  STARTMAILINPUTMESSAGE+ "\r\n");
-                        state.setState(State.DATAREAD);
+                        state.setState(State.DATAREADING);
                     }
 
 
                     if(state.getState() == State.MESSAGESENT){ // DATA END:
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
                         state.setState(State.MESSSAGEREAD);
+                        saveEmail(state.getSender(), state.getReceiver(), state.getMessage());
                     }
 
 
@@ -296,9 +309,6 @@ public class Server {
                         sendMessage(channel, state.getByteBuffer(), CLOSINGMESSAGE + "\r\n");
                         state.setState(State.DEAD);
                         channel.close();
-
-
-                        saveEmail(state.getSender(), state.getReceiver(), state.getMessage());
                     }
                 }
 
