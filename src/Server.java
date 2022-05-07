@@ -1,7 +1,4 @@
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.UnsupportedEncodingException;
+import java.io.*;
 import java.net.InetSocketAddress;
 import java.nio.*;
 import java.nio.channels.*;
@@ -352,10 +349,11 @@ public class Server {
         }
 
 
-
-        ByteBuffer buf = ByteBuffer.allocate(8192);
+        int size = message.getBytes(StandardCharsets.US_ASCII).length;
+        ByteBuffer buf = ByteBuffer.allocate(size);
         buf.put(message.getBytes(StandardCharsets.US_ASCII));
         buf.flip();
+
 
         FileOutputStream f;
         f = new FileOutputStream("emails/" + receiver  + "/" + sender + "_" + messengerID + ".txt");
@@ -367,29 +365,24 @@ public class Server {
 
         buf.clear();
 
+        //removes the "." in the textfile
+        File originalFile = new File("emails/" + receiver  + "/" + sender + "_" + messengerID + ".txt");
+        File tmpFile = new File("tempFile.txt");
 
-        /*
-        try{
-            //Create Directory
-            Path p = Paths.get("D:/Code/Java/DSMTP/vs_uebung_1_gruppe_1/src/emails/" + receiver);
-            if(!Files.exists(p)){
-                Path path = Files.createDirectories(p);
-            }
-            //Create File
-            Path d = Paths.get(p + "/" + sender + "_" + messengerID + ".txt");
-            if(!Files.exists(d)){
-                Files.createFile(d);
-            }
+        BufferedReader reader = new BufferedReader(new FileReader(originalFile));
+        BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile));
 
+        String lineToRemove = ".";
+        String currentLine;
 
-            //Put message in File
-            Files.write(d, message.getBytes());
-        }catch (Exception e){
-            e.printStackTrace();
+        while((currentLine = reader.readLine()) != null) {
+            String trimmedLine = currentLine.trim();
+            if(trimmedLine.equals(lineToRemove)) continue;
+            writer.write(currentLine);
         }
-
-
-         */
+        writer.close();
+        reader.close();
+        tmpFile.renameTo(originalFile);
     }
 
     public static String getReceiverContent(String s) {
