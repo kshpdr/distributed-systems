@@ -333,6 +333,7 @@ public class Server {
         // Random Zahl für Messenger ID
         Random rand = new Random();
         int messengerID = rand.nextInt(10000);
+        String messageLastCharsDeleted = message.substring(0, message.length() - 5);
 
         try {
             Files.createDirectories(Paths.get("emails/" + receiver));
@@ -349,9 +350,9 @@ public class Server {
         }
 
 
-        int size = message.getBytes(StandardCharsets.US_ASCII).length;
+        int size = messageLastCharsDeleted.getBytes(StandardCharsets.US_ASCII).length;
         ByteBuffer buf = ByteBuffer.allocate(size);
-        buf.put(message.getBytes(StandardCharsets.US_ASCII));
+        buf.put(messageLastCharsDeleted.getBytes(StandardCharsets.US_ASCII));
         buf.flip();
 
 
@@ -365,24 +366,25 @@ public class Server {
 
         buf.clear();
 
+
         //removes the "." in the textfile
-        File originalFile = new File("emails/" + receiver  + "/" + sender + "_" + messengerID + ".txt");
-        File tmpFile = new File("tempFile.txt");
-
-        BufferedReader reader = new BufferedReader(new FileReader(originalFile));
-        BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile));
-
-        String lineToRemove = ".";
-        String currentLine;
-
-        while((currentLine = reader.readLine()) != null) {
-            String trimmedLine = currentLine.trim();
-            if(trimmedLine.equals(lineToRemove)) continue;
-            writer.write(currentLine);
-        }
-        writer.close();
-        reader.close();
-        tmpFile.renameTo(originalFile);
+//        File originalFile = new File("emails/" + receiver  + "/" + sender + "_" + messengerID + ".txt");
+//        File tmpFile = new File("tempFile.txt");
+//
+//        BufferedReader reader = new BufferedReader(new FileReader(originalFile));
+//        BufferedWriter writer = new BufferedWriter(new FileWriter(tmpFile));
+//
+//        String lineToRemove = ".";
+//        String currentLine;
+//
+//        while((currentLine = reader.readLine()) != null) {
+//            String trimmedLine = currentLine.trim();
+//            if(trimmedLine.equals(lineToRemove)) continue;
+//            writer.write(currentLine);
+//        }
+//        writer.close();
+//        reader.close();
+//        tmpFile.renameTo(originalFile);
     }
 
     public static String getReceiverContent(String s) {
