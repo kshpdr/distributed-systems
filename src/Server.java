@@ -225,18 +225,25 @@ public class Server {
 
                     if (state.getState() == State.DATAREAD){
                         System.out.println(s);
-                        state.setState(State.MESSAGESENT);
 
-                        //save the message
-                        state.setMessage(s);
-                        state.superClear();
+                        //checke nur ob nicht vielleicht ein HELP gesendet wurde
+                        if(!(s.startsWith("HELP\r\n") || s.startsWith("HELP\n"))){
+                            state.setState(State.MESSAGESENT);
+                            //save the message
+
+                            //System.out.println("Message saved");
+                            state.setMessage(s);
+                            state.superClear();
+                        }
+
+
+
                     }
 
-                    if(s.startsWith("HELP")){
-                        if (state.getState() != State.MESSAGESENT){
-                            state.setState(State.HELPSENT);
-                            System.out.println("Received HELP...Setting state to HELPSENT " + s);
-                        }
+                    if(s.startsWith("HELP\r\n") || s.startsWith("HELP\n")){
+                        state.setState(State.HELPSENT);
+                        System.out.println("Received HELP...Setting state to HELPSENT " + s);
+
                     }
 
                     if(state.getState() == State.MESSSAGEREAD){
@@ -389,11 +396,15 @@ public class Server {
 
     public static String getReceiverContent(String s) {
         String contentWithRN = "";
+        String contentWithR = "";
         String content = "";
         String[] arrOfStrRN = s.split("RCPT TO: ");
         contentWithRN = arrOfStrRN[1];
-        String[] arrOfStr = contentWithRN.split("\r\n");
+        String[] arrOfStrR = contentWithRN.split("\n");
+        contentWithR = arrOfStrR[0];
+        String[] arrOfStr = contentWithR.split("\r");
         content = arrOfStr[0];
+
 
 
         return content;
@@ -401,11 +412,15 @@ public class Server {
 
     public static String getSenderContent(String s) {
         String contentWithRN = "";
+        String contentWithR = "";
         String content = "";
         String[] arrOfStrRN = s.split("MAIL FROM: ");
         contentWithRN = arrOfStrRN[1];
-        String[] arrOfStr = contentWithRN.split("\r\n");
+        String[] arrOfStrR = contentWithRN.split("\n");
+        contentWithR = arrOfStrR[0];
+        String[] arrOfStr = contentWithR.split("\r");
         content = arrOfStr[0];
+
 
 
         return content;
