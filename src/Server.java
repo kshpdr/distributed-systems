@@ -104,6 +104,7 @@ public class Server {
     public final static String OKMESSAGE = "250 ";
     public final static String CLOSINGMESSAGE = "221 ";
     public final static String STARTMAILINPUTMESSAGE = "354 ";
+    public final static String ERRORMESSAGE = "503 bad sequence of commands";
     public final static String HELPMESSAGE =
             "214 \n" +
                     "HELO: initiate MAIL\n" +
@@ -117,10 +118,6 @@ public class Server {
 
 
     public static void main(String[] args) throws Exception {
-
-
-
-
 
         //initialisiere Selektor, Server-Socket
         Selector selector = Selector.open();
@@ -184,50 +181,77 @@ public class Server {
 
 
                     String s = readMessage(channel, state.getByteBuffer());
+                    //                                         SMTPClient                 netcat                       SMTPClient                 netcat
+                    boolean NOTQUITANDNOTHELP = !(s.startsWith("QUIT\r\n") || s.startsWith("QUIT\n") || s.startsWith("HELP\r\n") || s.startsWith("HELP\n"));
 
+                    // LISTEN FOR HELO
                     if (state.getState() == State.RECEIVEDWELCOME) {
 
-                        System.out.println("Message received: " + s);
+                        //System.out.println("Message received: " + s);
 
-
-                        //HELO
                         //Bestätigung HELO Client
                         if (s.startsWith("HELO")) {
                             state.setState(State.HELOSENT);
                             System.out.println("Received HELO...Setting state to HELOSENT " + s);
+
+                        }else if(NOTQUITANDNOTHELP){
+                            sendMessage(channel, state.getByteBuffer(), ERRORMESSAGE + "\r\n");
+                            state.superClear();
                         }
                     }
 
-                    if (s.startsWith("MAIL FROM")){
-                        state.setState(State.MAILFROMSENT);
-                        System.out.println("Received MAIL FROM...Setting state to MAILFROMSENT " + s);
 
-                        //save the sender-address
-                        String content = getSenderContent(s);
-                        state.setSender(content);
+                    // LISTEN FOR MAIL FROM: <address>
+                    if(state.getState() == State.HELOREAD){
+                        if (s.startsWith("MAIL FROM")){
+                            state.setState(State.MAILFROMSENT);
+                            System.out.println("Received MAIL FROM...Setting state to MAILFROMSENT " + s);
+
+                            //save the sender-address
+                            String content = getSenderContent(s);
+                            state.setSender(content);
+                        }else if(NOTQUITANDNOTHELP){
+                            sendMessage(channel, state.getByteBuffer(), ERRORMESSAGE + "\r\n");
+                            state.superClear();
+                        }
                     }
 
-                    if (s.startsWith("RCPT TO")){
-                        state.setState(State.RCPTTOSENT);
-                        System.out.println("Received RCPT TO...Setting state to RCPTTO " + s);
 
-                        //save the receiver-address
-                        String content = getReceiverContent(s);
-                        state.setReceiver(content);
+
+                    // LISTEN FOR RCPT TO: <address>
+                    if(state.getState() == State.MAILFROMREAD){
+                        if (s.startsWith("RCPT TO")){
+                            state.setState(State.RCPTTOSENT);
+                            System.out.println("Received RCPT TO...Setting state to RCPTTO " + s);
+
+                            //save the receiver-address
+                            String content = getReceiverContent(s);
+                            state.setReceiver(content);
+                        }else if(NOTQUITANDNOTHELP){
+                            sendMessage(channel, state.getByteBuffer(), ERRORMESSAGE + "\r\n");
+                            state.superClear();
+                        }
                     }
 
+
+                    // LISTEN FOR DATA
                     if (state.getState() == State.RCPTTOREAD){
                         if (s.startsWith("DATA")){
                             state.setState(State.DATASENT);
                             System.out.println("Received DATASENT...Setting state to DATA " + s);
+                        }else if(NOTQUITANDNOTHELP){
+                            sendMessage(channel, state.getByteBuffer(), ERRORMESSAGE + "\r\n");
+                            state.superClear();
                         }
                     }
 
+
+                    // LISTEN FOR MESSAGE
                     if (state.getState() == State.DATAREAD){
                         System.out.println(s);
 
                         //checke nur ob nicht vielleicht ein HELP gesendet wurde
-                        if(!(s.startsWith("HELP\r\n") || s.startsWith("HELP\n"))){
+                        if(NOTQUITANDNOTHELP){
                             state.setState(State.MESSAGESENT);
                             //save the message
 
@@ -240,20 +264,24 @@ public class Server {
 
                     }
 
+
+                    // LISTEN FOR HELP
+                    //              SMTPClient                  netcat
                     if(s.startsWith("HELP\r\n") || s.startsWith("HELP\n")){
                         state.setState(State.HELPSENT);
                         System.out.println("Received HELP...Setting state to HELPSENT " + s);
 
                     }
 
-                    if(state.getState() == State.MESSSAGEREAD){
-                        if(s.startsWith("QUIT")){
-                            state.setState(State.QUITSENT);
-                            System.out.println("Received QUIT...Setting state to QUITSENT " + s);
 
+                    // LISTEN FOR QUIT
+                    //              SMTPClient                  netcat
+                    if(s.startsWith("QUIT\r\n") || s.startsWith("QUIT\n")){
+                        state.setState(State.QUITSENT);
+                        System.out.println("Received QUIT...Setting state to QUITSENT " + s);
 
-                        }
                     }
+
 
 
                 }
@@ -282,7 +310,7 @@ public class Server {
                         state.setState(State.RECEIVEDWELCOME);
                     }
 
-
+                    // SEND HELP
                     if(state.getState() == State.HELPSENT){
                         sendMessage(channel, state.getByteBuffer(), HELPMESSAGE + "\r\n");
 
@@ -292,37 +320,40 @@ public class Server {
                     }
 
 
+                    // SEND OK AFTER HELO
                     if(state.getState() == State.HELOSENT){ // HELO:
                         // Server bestätigt Client mit dem String 250
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
-                        // OKMessage muss nur einmal gesendet werden
+
                         state.setState(State.HELOREAD);
                     }
 
-
+                    // SEND OK AFTER MAIL FROM
                     if(state.getState() == State.MAILFROMSENT){ // MAIL FROM:
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
                         state.setState(State.MAILFROMREAD);
                     }
 
+                    // SEND OK AFTER RCPT TO
                     if(state.getState() == State.RCPTTOSENT){ // RCPT TO:
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
                         state.setState(State.RCPTTOREAD);
                     }
 
+                    // SEND 354 AFTER DATA
                     if(state.getState() == State.DATASENT){ // DATA:
                         sendMessage(channel, state.getByteBuffer(),  STARTMAILINPUTMESSAGE+ "\r\n");
                         state.setState(State.DATAREAD);
                     }
 
-
+                    // SEND OK AFTER MESSAGE
                     if(state.getState() == State.MESSAGESENT){ // DATA END:
                         sendMessage(channel, state.getByteBuffer(), OKMESSAGE + "\r\n");
                         state.setState(State.MESSSAGEREAD);
                         saveEmail(state.getSender(), state.getReceiver(), state.getMessage());
                     }
 
-
+                    // SEND 214 AFTER QUIT
                     if(state.getState() == State.QUITSENT){ // DIE:
                         sendMessage(channel, state.getByteBuffer(), CLOSINGMESSAGE + "\r\n");
                         state.setState(State.DEAD);
