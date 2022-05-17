@@ -38,12 +38,14 @@ public class MessageSequencer implements Runnable{
         Thread messageSequencer = new Thread(new MessageSequencer());
         messageSequencer.start();
 
-        int threadsAmount = Integer.parseInt(args[0]);
+        // middleware between messageGenerator and threads:
+        // from one side messages generator put messages in the queue, from other side threads read them
         BlockingQueue<String> blockingQueue = new ArrayBlockingQueue<String>(1024);
 
         Thread messageGenerator = new Thread(new MessageGenerator(blockingQueue));
         messageGenerator.start();
 
+        int threadsAmount = Integer.parseInt(args[0]);
         ArrayList<Thread> threads = new ArrayList<>();
         for (int i = 0; i < threadsAmount; i++){
             Thread thread = new Thread(new InboxQueue(blockingQueue));
