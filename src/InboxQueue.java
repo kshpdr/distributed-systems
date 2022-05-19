@@ -1,3 +1,13 @@
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.sql.Time;
 import java.util.concurrent.BlockingQueue;
 
 public class InboxQueue implements Runnable{
@@ -9,6 +19,7 @@ public class InboxQueue implements Runnable{
     public static final String ANSI_BLUE = "\u001B[34m";
     public static final String ANSI_PURPLE = "\u001B[35m";
     public static final String ANSI_RESET = "\u001B[0m";
+    public String path;
 
     BlockingQueue<Message> blockingQueue = null;
     private String name;
@@ -16,6 +27,14 @@ public class InboxQueue implements Runnable{
     public InboxQueue(BlockingQueue blockingQueue, String name){
         this.blockingQueue = blockingQueue;
         this.name = name;
+        path = "logs/" + name + ".txt";
+
+        try {
+            File file = new File(path);
+            file.createNewFile();
+        }catch (Exception e){
+            e.printStackTrace();
+        }
     }
 
 
@@ -24,18 +43,55 @@ public class InboxQueue implements Runnable{
     }
 
 
+    public void writeLogFile(ExternalMessage msg){
+
+        try{
+            FileWriter writer = new FileWriter(path, true);
+
+            writer.write("Received External Message: " + msg.getMessage() + " at " + System.currentTimeMillis() +" with payload: "+ msg.getPayload() +"\n");
+
+            writer.close();
+
+        }catch (IOException e){
+            e.printStackTrace();
+        }
+
+    }
+
+
     //TODO:
     @Override
     public void run() {
+
+
+        int inboxSize = 0;
+
+
         while(true){
 
-            printInbox();
+            //printInbox();
+
+            if(inboxSize != blockingQueue.size()){
+
+
+                try {
+                    ExternalMessage msg = (ExternalMessage) blockingQueue.take();
+
+                    writeLogFile(msg);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                inboxSize = blockingQueue.size();
+            }
 
             try {
                 Thread.sleep(2000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
+
+
 
             /*
             try {
