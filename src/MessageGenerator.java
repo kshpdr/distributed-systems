@@ -11,11 +11,11 @@ public class MessageGenerator implements Runnable{
 
 
     public final static String PATH = "external_messages.txt";
-    BlockingQueue<Message> blockingQueue = null;
+    BlockingQueue<ExternalMessage> externalMessages = null;
     ArrayList<InboxQueue> inboxQueues = null;
 
-    public MessageGenerator(BlockingQueue blockingQueue, ArrayList<InboxQueue> inboxQueues){
-        this.blockingQueue = blockingQueue;
+    public MessageGenerator(BlockingQueue externalMessages, ArrayList<InboxQueue> inboxQueues){
+        this.externalMessages = externalMessages;
         this.inboxQueues = inboxQueues;
     }
 
@@ -37,14 +37,14 @@ public class MessageGenerator implements Runnable{
 
 
     //put all the lines from a txt into a blockingqueue
-    void fillBlockingQueue(BlockingQueue<Message> messages, String path){
+    void fillBlockingQueue(BlockingQueue<ExternalMessage> messages, String path){
         try{
             File file = new File(path);
             Scanner reader = new Scanner(file);
 
             while (reader.hasNextLine()){
                 String data = reader.nextLine();
-                Message msg = new ExternalMessage(data);
+                ExternalMessage msg = new ExternalMessage(data);
                 messages.put(msg);
             }
         } catch (FileNotFoundException | InterruptedException e) {
@@ -55,13 +55,13 @@ public class MessageGenerator implements Runnable{
     @Override
     public void run() {
 
-        fillBlockingQueue(blockingQueue, PATH);
+        fillBlockingQueue(externalMessages, PATH);
         Random random = new Random();
         while(true){
             int r = random.nextInt(5);
             System.out.println("Sending external message to random thread... ");
             try {
-                inboxQueues.get(r).blockingQueue.put(blockingQueue.take());
+                inboxQueues.get(r).getExternalMessages().put(externalMessages.take());
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
