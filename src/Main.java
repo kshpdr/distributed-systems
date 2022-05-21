@@ -37,6 +37,8 @@ public class Main {
         startAllThreads(threads);
 
 
+
+
     }
 
     private static void startAllThreads(ArrayList<Thread> threads) {

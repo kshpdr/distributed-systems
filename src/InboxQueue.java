@@ -1,3 +1,5 @@
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.concurrent.BlockingQueue;
 
 public class InboxQueue implements Runnable{
@@ -9,6 +11,8 @@ public class InboxQueue implements Runnable{
     public static final String ANSI_BLUE = "\u001B[34m";
     public static final String ANSI_PURPLE = "\u001B[35m";
     public static final String ANSI_RESET = "\u001B[0m";
+    public String path;
+
 
     BlockingQueue<ExternalMessage> externalMessages = null;
     BlockingQueue<InternalMessage> internalMessages = null;
@@ -18,6 +22,7 @@ public class InboxQueue implements Runnable{
         this.externalMessages = externalMessages;
         this.internalMessages = internalMessages;
         this.name = name;
+        path = "logs/" + name + ".txt";
     }
 
 
@@ -33,10 +38,22 @@ public class InboxQueue implements Runnable{
     //TODO:
     @Override
     public void run() {
+
+
         while(true){
 
-            printExternalMessages();
-            printInternalMessages();
+            //printExternalMessages();
+            //printInternalMessages();
+            if(internalMessages.peek() != null){
+                try {
+                    writeLogFile(internalMessages.take());
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+
+
+
 
             try {
                 Thread.sleep(2000);
@@ -55,6 +72,18 @@ public class InboxQueue implements Runnable{
              */
         }
     }
+
+    public void writeLogFile(InternalMessage msg){
+        try {
+            FileWriter writer = new FileWriter(path, true);
+            writer.write("Received message: " + msg.getMessage() + " with payload: " + msg.getAttachment().get(0) + "\n");
+            writer.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+
 
     //for debug
     public void printExternalMessages(){
@@ -112,4 +141,6 @@ public class InboxQueue implements Runnable{
         }
         System.out.println("");
     }
+
+
 }

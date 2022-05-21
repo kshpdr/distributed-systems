@@ -22,8 +22,11 @@ public class MessageSequencer implements Runnable{
         try{
             for (InboxQueue inboxQueue : inboxQueues) {
                 while (!inboxQueue.getExternalMessages().isEmpty()) {
-                    Message message = inboxQueue.getExternalMessages().take();
-                    internalMessages.put(message);
+                    ExternalMessage message = inboxQueue.getExternalMessages().take();
+                    ArrayList<String> attachment = new ArrayList<>();
+                    attachment.add(message.getPayload() + "");
+                    InternalMessage internalMessage = new InternalMessage(message.getMessage(), attachment);
+                    internalMessages.put(internalMessage);
                 }
             }
         }
@@ -36,10 +39,10 @@ public class MessageSequencer implements Runnable{
 
     //TODO:
     //message sequencer sends all messages to all other threads
-    public void forward(Message message){
+    public void forward(InternalMessage message){
         try{
             for (InboxQueue inboxQueue : inboxQueues) {
-                InternalMessage internalMessage = new InternalMessage(message.getMessage(), null);
+                InternalMessage internalMessage = new InternalMessage(message.getMessage(), message.getAttachment());
                 inboxQueue.getInternalMessages().put(internalMessage);
             }
         }
@@ -55,7 +58,7 @@ public class MessageSequencer implements Runnable{
             try {
                 poll();
                 while(!internalMessages.isEmpty()){
-                    forward(internalMessages.take());
+                    forward((InternalMessage) internalMessages.take());
                 }
             } catch (InterruptedException e) {
                 e.printStackTrace();

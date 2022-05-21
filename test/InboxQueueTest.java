@@ -3,6 +3,7 @@ import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.util.ArrayList;
 import java.util.Scanner;
 import java.util.concurrent.ArrayBlockingQueue;
 
@@ -12,9 +13,11 @@ class InboxQueueTest {
 
     @Test
     void writeLogFile() throws FileNotFoundException {
-        InboxQueue inboxQueue = new InboxQueue(new ArrayBlockingQueue(10), "T1");
+        InboxQueue inboxQueue = new InboxQueue(new ArrayBlockingQueue(10), new ArrayBlockingQueue(10), "T1");
 
-        inboxQueue.writeLogFile(new ExternalMessage("Hello World"));
+        ArrayList<String> attachment = new ArrayList<>();
+        attachment.add("10");
+        inboxQueue.writeLogFile(new InternalMessage("Hello World", attachment));
 
         File file = new File(inboxQueue.path);
         Scanner sc = new Scanner(file);
@@ -24,7 +27,7 @@ class InboxQueueTest {
         }
         sc.close();
 
-        boolean bool = data.startsWith("Received message: Hello World at ");
+        boolean bool = data.startsWith("Received message: Hello World with payload: ");
         assertTrue(bool);
 
     }
