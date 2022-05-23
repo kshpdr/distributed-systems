@@ -21,11 +21,13 @@ public class Main {
             threads.add(thread);
         }
 
+
         //start message sequencer
         BlockingQueue<Message> internalMessages = new ArrayBlockingQueue<Message>(1024);
         MessageSequencer msgSequencer = new MessageSequencer(internalMessages, inboxQueues);
         Thread messageSequencer = new Thread(msgSequencer);
         messageSequencer.start();
+
 
         // middleware between messageGenerator and threads:
         // from one side messages generator put messages in the queue, from other side threads read them

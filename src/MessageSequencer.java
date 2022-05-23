@@ -16,7 +16,6 @@ public class MessageSequencer implements Runnable{
         this.inboxQueues = inboxQueues;
     }
 
-    //TODO:
     //message sequencer continuously polls the inbox queues of all the threads
     public void poll() throws InterruptedException {
         try{
@@ -37,7 +36,6 @@ public class MessageSequencer implements Runnable{
 
 
 
-    //TODO:
     //message sequencer sends all messages to all other threads
     public void forward(InternalMessage message){
         try{
@@ -51,7 +49,6 @@ public class MessageSequencer implements Runnable{
         }
     }
 
-    //TODO:
     @Override
     public void run() {
         while(true){

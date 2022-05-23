@@ -15,6 +15,8 @@ public class InboxQueue implements Runnable{
 
 
     BlockingQueue<ExternalMessage> externalMessages = null;
+
+    //TODO: MAKE internalMessages synchronizable + ADD LAMPORT FEATURE
     BlockingQueue<InternalMessage> internalMessages = null;
     private String name;
 
@@ -35,7 +37,12 @@ public class InboxQueue implements Runnable{
     }
 
 
-    //TODO:
+    //TODO: MAKE forward-function: SEND EVERY MESSAGE IN INBOXQUEUE TO ALL OTHER THREADS
+    public int forward(){
+        return 0;
+    }
+
+
     @Override
     public void run() {
 
