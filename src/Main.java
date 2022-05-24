@@ -9,6 +9,29 @@ public class Main {
 
     public static void main(String[] args) {
 
+        //STATE = 0: run with message Sequencer
+        //STATE = 1: run with lamport design
+        int STATE = 0;
+
+
+        if(STATE == 0){
+            runMessageSequencerExample(args);
+        }
+        if(STATE == 1){
+            runLamportDesignExample(args);
+        }
+
+
+
+
+
+    }
+
+    private static void runLamportDesignExample(String[] args) {
+        //TODO
+    }
+
+    private static void runMessageSequencerExample(String[]args) {
         int threadsAmount = Integer.parseInt("5");
         ArrayList<Thread> threads = new ArrayList<>();
         ArrayList<InboxQueue> inboxQueues = new ArrayList<>();
@@ -37,10 +60,6 @@ public class Main {
         messageGenerator.start();
 
         startAllThreads(threads);
-
-
-
-
     }
 
     private static void startAllThreads(ArrayList<Thread> threads) {
