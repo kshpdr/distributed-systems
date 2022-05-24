@@ -24,6 +24,8 @@ public class InboxQueue implements Runnable{
     private String name;
     ArrayList<InboxQueue> inboxQueues;
 
+
+    //constructor for messageSequencer
     public InboxQueue(BlockingQueue externalMessages, BlockingQueue internalMessages, String name){
         this.externalMessages = externalMessages;
         this.internalMessages = internalMessages;
@@ -32,6 +34,8 @@ public class InboxQueue implements Runnable{
         STATE = 0;
     }
 
+
+    //constructor for lamport design
     public InboxQueue(BlockingQueue externalMessages, BlockingQueue internalMessages, String name, ArrayList<InboxQueue> inboxQueues){
         this.externalMessages = externalMessages;
         this.internalMessages = internalMessages;
@@ -100,6 +104,7 @@ public class InboxQueue implements Runnable{
     private void runLamportExample(){
         while (true){
 
+            //constantly forward messages to the other threads
             if(externalMessages.peek() != null){
                 try {
                     forward(externalMessages.take());
@@ -108,10 +113,24 @@ public class InboxQueue implements Runnable{
                 }
             }
 
+            //read internalMessages and write inside logfile
             synchronized (internalMessages){
                 if(internalMessages.peek() != null){
                     try {
-                        writeLogFile(internalMessages.take());
+
+                        InternalMessage msg = internalMessages.take();
+
+                        //check if timestamp is bigger than yours
+                        int msgTimestamp =  Integer.parseInt(msg.getAttachment().get(1));
+                        if(msgTimestamp > timestamp){
+                            timestamp = msgTimestamp;
+                        }
+                        timestamp++;
+
+                        //atach new timestamp onto message
+                        msg.getAttachment().remove(1);
+                        msg.getAttachment().add(timestamp + "");
+                        writeLogFile(msg);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
