@@ -11,7 +11,7 @@ public class Main {
 
         //STATE = 0: run with message Sequencer
         //STATE = 1: run with lamport design
-        int STATE = 0;
+        int STATE = 1;
 
 
         if(STATE == 0){
@@ -28,7 +28,36 @@ public class Main {
     }
 
     private static void runLamportDesignExample(String[] args) {
-        //TODO
+        int threadsAmount = Integer.parseInt("5");
+        ArrayList<Thread> threads = new ArrayList<>();
+        ArrayList<InboxQueue> inboxQueues = new ArrayList<>();
+
+        //create inboxes and threads
+        for (int i = 0; i < threadsAmount; i++){
+            InboxQueue inbox = new InboxQueue(new ArrayBlockingQueue<>(256), new ArrayBlockingQueue<>(256), "T" + i, inboxQueues);
+            inboxQueues.add(inbox);
+            Thread thread = new Thread(inbox);
+            threads.add(thread);
+        }
+        updateInboxQueues(inboxQueues);
+
+
+        // middleware between messageGenerator and threads:
+        // from one side messages generator put messages in the queue, from other side threads read them
+        BlockingQueue<Message> externalMessages = new ArrayBlockingQueue<Message>(1024);
+        MessageGenerator msgGenerator = new MessageGenerator(externalMessages, inboxQueues);
+        Thread messageGenerator = new Thread(msgGenerator);
+        messageGenerator.start();
+
+        startAllThreads(threads);
+
+
+    }
+
+    private static void updateInboxQueues(ArrayList<InboxQueue> inboxQueues) {
+        for(InboxQueue inboxQueue : inboxQueues){
+            inboxQueue.inboxQueues = inboxQueues;
+        }
     }
 
     private static void runMessageSequencerExample(String[]args) {
