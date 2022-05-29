@@ -4,15 +4,10 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public class Main {
-
-
-
     public static void main(String[] args) {
-
         //STATE = 0: run with message Sequencer
         //STATE = 1: run with lamport design
-        int STATE = 1;
-
+        int STATE = 0;
 
         if(STATE == 0){
             runMessageSequencerExample(args);
@@ -20,11 +15,6 @@ public class Main {
         if(STATE == 1){
             runLamportDesignExample(args);
         }
-
-
-
-
-
     }
 
     private static void runLamportDesignExample(String[] args) {
@@ -41,17 +31,13 @@ public class Main {
         }
         updateInboxQueues(inboxQueues);
 
-
         // middleware between messageGenerator and threads:
         // from one side messages generator put messages in the queue, from other side threads read them
         BlockingQueue<Message> externalMessages = new ArrayBlockingQueue<Message>(1024);
         MessageGenerator msgGenerator = new MessageGenerator(externalMessages, inboxQueues);
         Thread messageGenerator = new Thread(msgGenerator);
         messageGenerator.start();
-
         startAllThreads(threads);
-
-
     }
 
     private static void updateInboxQueues(ArrayList<InboxQueue> inboxQueues) {
@@ -72,14 +58,11 @@ public class Main {
             Thread thread = new Thread(inbox);
             threads.add(thread);
         }
-
-
         //start message sequencer
         BlockingQueue<Message> internalMessages = new ArrayBlockingQueue<Message>(1024);
         MessageSequencer msgSequencer = new MessageSequencer(internalMessages, inboxQueues);
         Thread messageSequencer = new Thread(msgSequencer);
         messageSequencer.start();
-
 
         // middleware between messageGenerator and threads:
         // from one side messages generator put messages in the queue, from other side threads read them
@@ -87,10 +70,8 @@ public class Main {
         MessageGenerator msgGenerator = new MessageGenerator(externalMessages, inboxQueues);
         Thread messageGenerator = new Thread(msgGenerator);
         messageGenerator.start();
-
         startAllThreads(threads);
     }
-
     private static void startAllThreads(ArrayList<Thread> threads) {
         for(Thread thread : threads){
             thread.start();

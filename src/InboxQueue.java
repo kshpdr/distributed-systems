@@ -5,7 +5,6 @@ import java.util.concurrent.BlockingQueue;
 
 public class InboxQueue implements Runnable{
 
-
     public static final String ANSI_RED = "\u001B[31m";
     public static final String ANSI_GREEN = "\u001B[32m";
     public static final String ANSI_YELLOW = "\u001B[33m";
@@ -15,7 +14,6 @@ public class InboxQueue implements Runnable{
     public String path;
     public int timestamp;
     public int STATE;
-
 
     BlockingQueue<ExternalMessage> externalMessages = null;
 
@@ -58,7 +56,6 @@ public class InboxQueue implements Runnable{
 
     //TODO: MAKE forward-function: SEND EVERY MESSAGE IN INBOXQUEUE TO ALL OTHER THREADS
     public int forward(ExternalMessage msg){
-
         for(InboxQueue inboxQueue : inboxQueues){
             synchronized (inboxQueue.getInternalMessages()){
                 //transform externalMessage into internalMessage with attachment: (payload, timestamp)
@@ -66,8 +63,6 @@ public class InboxQueue implements Runnable{
                 attachment.add(msg.getPayload() + "");
                 attachment.add(timestamp + "");
                 InternalMessage internalMessage = new InternalMessage(msg.getMessage(), attachment);
-
-
                 //send internalMessage
                 try {
                     inboxQueue.getInternalMessages().put(internalMessage);
@@ -78,32 +73,22 @@ public class InboxQueue implements Runnable{
                 timestamp++;
             }
         }
-
-
         return 0;
     }
 
-
     @Override
     public void run() {
-
-
         while(true){
-
             if(STATE == 0){
                 runMessageSequencerExample();
             }
             if(STATE == 1){
                 runLamportExample();
-
             }
-
         }
     }
-
     private void runLamportExample(){
         while (true){
-
             //constantly forward messages to the other threads
             if(externalMessages.peek() != null){
                 try {
@@ -112,21 +97,17 @@ public class InboxQueue implements Runnable{
                     e.printStackTrace();
                 }
             }
-
             //read internalMessages and write inside logfile
             synchronized (internalMessages){
                 if(internalMessages.peek() != null){
                     try {
-
                         InternalMessage msg = internalMessages.take();
-
                         //check if timestamp is bigger than yours
                         int msgTimestamp =  Integer.parseInt(msg.getAttachment().get(1));
                         if(msgTimestamp > timestamp){
                             timestamp = msgTimestamp;
                         }
                         timestamp++;
-
                         //atach new timestamp onto message
                         msg.getAttachment().remove(1);
                         msg.getAttachment().add(timestamp + "");
@@ -136,15 +117,12 @@ public class InboxQueue implements Runnable{
                     }
                 }
             }
-
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-
-
     }
 
     private void runMessageSequencerExample() {
@@ -156,17 +134,12 @@ public class InboxQueue implements Runnable{
                     e.printStackTrace();
                 }
             }
-
-
-
-
             try {
                 Thread.sleep(10);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
-
     }
 
     public void writeLogFile(InternalMessage msg){
@@ -176,15 +149,12 @@ public class InboxQueue implements Runnable{
                 writer.write("Received message: " + msg.getMessage() + " with payload: " + msg.getAttachment().get(0) + " and timestamp: " + msg.getAttachment().get(1) + "\n");
             }else{
                 writer.write("Received message: " + msg.getMessage() + " with payload: " + msg.getAttachment().get(0) + "\n");
-
             }
             writer.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
-
-
 
     //for debug
     public void printExternalMessages(){
@@ -216,7 +186,6 @@ public class InboxQueue implements Runnable{
     }
 
     public void printInternalMessages(){
-
         String color = "";
         switch (name){
             case "T0":
@@ -242,6 +211,4 @@ public class InboxQueue implements Runnable{
         }
         System.out.println("");
     }
-
-
 }

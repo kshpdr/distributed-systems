@@ -6,8 +6,6 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public class MessageSequencer implements Runnable{
-
-
     private BlockingQueue<Message> internalMessages;
     ArrayList<InboxQueue> inboxQueues = null;
 
@@ -21,6 +19,7 @@ public class MessageSequencer implements Runnable{
         try{
             for (InboxQueue inboxQueue : inboxQueues) {
                 while (!inboxQueue.getExternalMessages().isEmpty()) {
+                    //System.out.println(inboxQueue.getExternalMessages());
                     ExternalMessage message = inboxQueue.getExternalMessages().take();
                     ArrayList<String> attachment = new ArrayList<>();
                     attachment.add(message.getPayload() + "");
@@ -33,8 +32,6 @@ public class MessageSequencer implements Runnable{
             e.printStackTrace();
         }
     }
-
-
 
     //message sequencer sends all messages to all other threads
     public void forward(InternalMessage message){
