@@ -4,21 +4,24 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public class Main {
+    // number of threads hardcoded
+    public static int threadsAmount = Integer.parseInt("5");
     public static void main(String[] args) {
-        //STATE = 0: run with message Sequencer
-        //STATE = 1: run with lamport design
+        // number of threads via command line
+        threadsAmount = Integer.parseInt(args[0]);
         int STATE = 0;
 
+        //STATE = 0: run with message Sequencer
         if(STATE == 0){
             runMessageSequencerExample(args);
         }
+        //STATE = 1: run with lamport design
         if(STATE == 1){
             runLamportDesignExample(args);
         }
     }
 
     private static void runLamportDesignExample(String[] args) {
-        int threadsAmount = Integer.parseInt("5");
         ArrayList<Thread> threads = new ArrayList<>();
         ArrayList<InboxQueue> inboxQueues = new ArrayList<>();
 
@@ -47,8 +50,7 @@ public class Main {
     }
 
     private static void runMessageSequencerExample(String[]args) {
-        int threadsAmount = Integer.parseInt("5");
-        ArrayList<Thread> threads = new ArrayList<>();
+        ArrayList<Thread> threadList = new ArrayList<>();
         ArrayList<InboxQueue> inboxQueues = new ArrayList<>();
 
         //create inboxes and threads
@@ -56,7 +58,7 @@ public class Main {
             InboxQueue inbox = new InboxQueue(new ArrayBlockingQueue<>(256), new ArrayBlockingQueue<>(256), "T" + i);
             inboxQueues.add(inbox);
             Thread thread = new Thread(inbox);
-            threads.add(thread);
+            threadList.add(thread);
         }
         //start message sequencer
         BlockingQueue<Message> internalMessages = new ArrayBlockingQueue<Message>(1024);
@@ -70,7 +72,7 @@ public class Main {
         MessageGenerator msgGenerator = new MessageGenerator(externalMessages, inboxQueues);
         Thread messageGenerator = new Thread(msgGenerator);
         messageGenerator.start();
-        startAllThreads(threads);
+        startAllThreads(threadList);
     }
     private static void startAllThreads(ArrayList<Thread> threads) {
         for(Thread thread : threads){
