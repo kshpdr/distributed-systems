@@ -9,7 +9,7 @@ public class Main {
     public static void main(String[] args) {
         // parse number of threads via command line
         threadsAmount = Integer.parseInt(args[0]);
-        int STATE = 1;
+        int STATE = 0;
 
         //STATE = 0: run with message Sequencer
         if(STATE == 0){

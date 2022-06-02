@@ -1,5 +1,8 @@
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.concurrent.BlockingQueue;
 
@@ -141,6 +144,8 @@ public class InboxQueue implements Runnable{
 
     public void writeLogFile(InternalMessage msg){
         try {
+            File logFile = new File(path);
+            logFile.createNewFile();
             FileWriter writer = new FileWriter(path, true);
             if(msg.getAttachment().size() == 2){
                 writer.write("Received message: " + msg.getMessage() + " with payload: " + msg.getAttachment().get(0) + " and timestamp: " + msg.getAttachment().get(1) + "\n");
