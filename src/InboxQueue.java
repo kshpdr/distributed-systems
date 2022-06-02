@@ -144,6 +144,9 @@ public class InboxQueue implements Runnable{
 
     public void writeLogFile(InternalMessage msg){
         try {
+            if (!Files.exists(Paths.get("logs/"))){
+                Files.createDirectories(Paths.get("logs/"));
+            }
             File logFile = new File(path);
             logFile.createNewFile();
             FileWriter writer = new FileWriter(path, true);
