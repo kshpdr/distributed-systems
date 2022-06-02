@@ -4,12 +4,12 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public class Main {
-    // number of threads hardcoded
-    public static int threadsAmount = Integer.parseInt("5");
+    public static int threadsAmount;
+
     public static void main(String[] args) {
-        // number of threads via command line
+        // parse number of threads via command line
         threadsAmount = Integer.parseInt(args[0]);
-        int STATE = 0;
+        int STATE = 1;
 
         //STATE = 0: run with message Sequencer
         if(STATE == 0){
