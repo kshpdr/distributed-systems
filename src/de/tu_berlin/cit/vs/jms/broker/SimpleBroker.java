@@ -17,12 +17,26 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 
 public class SimpleBroker {
     /* TODO: variables as needed */
+    private Session session;
+    private Connection connection;
+    private MessageConsumer serverConsumer;
+    private MessageProducer serverProducer;
+
+
     
     private final MessageListener listener = new MessageListener() {
         @Override
         public void onMessage(Message msg) {
-            if(msg instanceof ObjectMessage) {
-                //TODO
+            try{
+                TextMessage response = session.createTextMessage();
+                if(msg instanceof ObjectMessage) {
+                    //TODO
+                    TextMessage txtMsg = (TextMessage) msg;
+                    String messageText = txtMsg.getText();
+                    System.out.println(messageText);
+                }
+            }
+            catch (JMSException e){
             }
         }
     };
@@ -30,17 +44,18 @@ public class SimpleBroker {
     public SimpleBroker(List<Stock> stockList) throws JMSException {
         /* TODO: initialize connection, sessions, etc. */
         // initialize connection factory with corresponding connection and session
-        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:8161");
-        Connection connection = connectionFactory.createConnection();
+        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
+        this.connection = connectionFactory.createConnection();
         connection.start();
 
         // create session and queue for the messages
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue = session.createQueue("serverQueue");
+        this.session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue queue = session.createQueue("queue");
 
         //create consumer and start a message listener
-        MessageConsumer consumer = session.createConsumer(queue);
-        consumer.setMessageListener(listener);
+        this.serverConsumer = session.createConsumer(queue);
+        this.serverProducer = session.createProducer(queue);
+        serverConsumer.setMessageListener(listener);
         
         for(Stock stock : stockList) {
             /* TODO: prepare stocks as topics */

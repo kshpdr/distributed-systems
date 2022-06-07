@@ -21,24 +21,33 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 
 public class JmsBrokerClient {
     private final String clientName;
+    private Session session;
+    private Connection connection;
+    private MessageProducer clientProducer;
+    private MessageConsumer clientConsumer;
 
     public JmsBrokerClient(String clientName) throws JMSException {
         this.clientName = clientName;
         
         /* TODO: initialize connection, sessions, consumer, producer, etc. */
         // initialize connection factory with corresponding connection
-        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:8161");
-        Connection connection = connectionFactory.createConnection();
+        ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
+        this.connection = connectionFactory.createConnection();
         connection.start();
 
         // create session and queue for the messages
-        Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue = session.createQueue("clientQueue");
-        MessageProducer producer = session.createProducer(queue);
+        this.session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+        Queue queue = session.createQueue("queue");
+        this.clientProducer = session.createProducer(queue);
+        this.clientConsumer = session.createConsumer(queue);
     }
     
     public void requestList() throws JMSException {
         //TODO
+        //Create a messages
+        String text = "list";
+        TextMessage message = session.createTextMessage(text);
+        clientProducer.send(message);
     }
     
     public void buy(String stockName, int amount) throws JMSException {
