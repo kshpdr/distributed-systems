@@ -17,6 +17,8 @@ import de.tu_berlin.cit.vs.jms.common.SellMessage;
 import de.tu_berlin.cit.vs.jms.common.Stock;
 import de.tu_berlin.cit.vs.jms.common.UnregisterMessage;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.command.ActiveMQBlobMessage;
+import org.w3c.dom.Text;
 
 
 public class JmsBrokerClient {
@@ -40,14 +42,35 @@ public class JmsBrokerClient {
         Queue queue = session.createQueue("queue");
         this.clientProducer = session.createProducer(queue);
         this.clientConsumer = session.createConsumer(queue);
+        clientConsumer.setMessageListener(listener);
     }
+
+    private final MessageListener listener = new MessageListener() {
+        @Override
+        public void onMessage(Message msg) {
+            try{
+                if(msg instanceof ObjectMessage) {
+                    //TODO
+                    String content = ((String) ((ObjectMessage) msg).getObject());
+                    System.out.println(content);
+                }
+            }
+            catch (JMSException e){
+            }
+        }
+    };
     
     public void requestList() throws JMSException {
         //TODO
         //Create a messages
-        String text = "list";
-        TextMessage message = session.createTextMessage(text);
-        clientProducer.send(message);
+        RequestListMessage requestListMessage = new RequestListMessage();
+        TextMessage message = session.createTextMessage("list");
+
+        String content = "list";
+        ObjectMessage msg = session.createObjectMessage(content);
+
+        clientProducer.send(msg);
+        System.out.println("Command 'list' was sent");
     }
     
     public void buy(String stockName, int amount) throws JMSException {

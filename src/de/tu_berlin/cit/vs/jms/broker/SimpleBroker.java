@@ -1,18 +1,17 @@
 package de.tu_berlin.cit.vs.jms.broker;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.jms.*;
+import javax.jms.Queue;
 
 import de.tu_berlin.cit.vs.jms.common.BrokerMessage;
 import de.tu_berlin.cit.vs.jms.common.RegisterMessage;
 import de.tu_berlin.cit.vs.jms.common.Stock;
 import de.tu_berlin.cit.vs.jms.common.UnregisterMessage;
 import org.apache.activemq.ActiveMQConnectionFactory;
+import org.apache.activemq.command.ActiveMQTopic;
 
 
 public class SimpleBroker {
@@ -21,6 +20,8 @@ public class SimpleBroker {
     private Connection connection;
     private MessageConsumer serverConsumer;
     private MessageProducer serverProducer;
+    private List<Stock> stockList;
+    private ArrayList<Topic> topics = new ArrayList<>();
 
 
     
@@ -28,12 +29,22 @@ public class SimpleBroker {
         @Override
         public void onMessage(Message msg) {
             try{
-                TextMessage response = session.createTextMessage();
                 if(msg instanceof ObjectMessage) {
                     //TODO
-                    TextMessage txtMsg = (TextMessage) msg;
-                    String messageText = txtMsg.getText();
-                    System.out.println(messageText);
+                    String request = ((String) ((ObjectMessage) msg).getObject());
+                    System.out.println("Got a new message: " + request);
+
+                    String text = "";
+                    if (request.startsWith("list")){
+                        for (Stock stock : stockList){
+                             text += stock.toString();
+                             text += "\n";
+                        }
+                    }
+
+                    ObjectMessage response = session.createObjectMessage(text);
+                    serverProducer.send(response);
+                    System.out.println("Response was sent");
                 }
             }
             catch (JMSException e){
@@ -56,9 +67,12 @@ public class SimpleBroker {
         this.serverConsumer = session.createConsumer(queue);
         this.serverProducer = session.createProducer(queue);
         serverConsumer.setMessageListener(listener);
-        
+
+        this.stockList = stockList;
         for(Stock stock : stockList) {
             /* TODO: prepare stocks as topics */
+            Topic stockTopic = session.createTopic(stock.getName());
+            topics.add(stockTopic);
         }
     }
     
@@ -77,7 +91,12 @@ public class SimpleBroker {
     }
     
     public synchronized List<Stock> getStockList() {
-        List<Stock> stockList = new ArrayList<>();
+//        List<Stock> stockList = new ArrayList<>();
+
+//        for (Topic topic : this.topics){
+//
+//        }
+//
 
         /* TODO: populate stockList */
 
