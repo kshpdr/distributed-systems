@@ -14,6 +14,7 @@ public class JmsBrokerServer {
             List<Stock> stocks = new ArrayList<>();
             stocks.add(new Stock("ALDI", 200, 2.0));
             stocks.add(new Stock("LIDL", 300, 1.0));
+            stocks.add(new Stock("REWE", 200, 0.5));
             
             SimpleBroker broker = new SimpleBroker(stocks);
             System.in.read();

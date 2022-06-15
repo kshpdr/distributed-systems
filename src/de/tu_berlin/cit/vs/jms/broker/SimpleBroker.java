@@ -1,21 +1,15 @@
 package de.tu_berlin.cit.vs.jms.broker;
 
 import java.util.*;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import javax.jms.*;
 import javax.jms.Queue;
 
-import de.tu_berlin.cit.vs.jms.common.BrokerMessage;
-import de.tu_berlin.cit.vs.jms.common.RegisterMessage;
-import de.tu_berlin.cit.vs.jms.common.Stock;
-import de.tu_berlin.cit.vs.jms.common.UnregisterMessage;
+import de.tu_berlin.cit.vs.jms.common.*;
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.activemq.command.ActiveMQTopic;
 
 
 public class SimpleBroker {
-    /* TODO: variables as needed */
+
     private Session session;
     private Connection connection;
     private MessageConsumer serverConsumer;
@@ -30,28 +24,50 @@ public class SimpleBroker {
         public void onMessage(Message msg) {
             try{
                 if(msg instanceof ObjectMessage) {
-                    //TODO
                     String request = ((String) ((ObjectMessage) msg).getObject());
                     System.out.println("Got a new message: " + request);
 
-                    String text = "";
+
                     if (request.startsWith("list")){
+                        String text = "";
                         for (Stock stock : stockList){
                              text += stock.toString();
                              text += "\n";
                         }
+
+
+                        ObjectMessage response = session.createObjectMessage(text);
+                        serverProducer.send(response);
+                        System.out.println("Response was sent");
                     }
 
-                    ObjectMessage response = session.createObjectMessage(text);
-                    serverProducer.send(response);
-                    System.out.println("Response was sent");
+                    if(request.startsWith("buy")){
+                        buy(request);
+                    }
+
+                    if(request.startsWith("sell")){
+                        sell(request);
+                    }
+
+
                 }
             }
             catch (JMSException e){
             }
         }
     };
-    
+
+    private ArrayList<String> separateMessage(String request) {
+        ArrayList<String> message = new ArrayList<>();
+
+        String[]splitted = request.split(",");
+
+        message.add(splitted[1]); //stockName
+        message.add(splitted[2]); //amount
+
+        return message;
+    }
+
     public SimpleBroker(List<Stock> stockList) throws JMSException {
         /* TODO: initialize connection, sessions, etc. */
         // initialize connection factory with corresponding connection and session
@@ -80,26 +96,46 @@ public class SimpleBroker {
         //TODO
     }
     
-    public synchronized int buy(String stockName, int amount) throws JMSException {
-        //TODO
+    public synchronized int buy(String request) throws JMSException {
+        ArrayList<String> message = separateMessage(request);
+        String stockName = message.get(0);
+        int amount = Integer.parseInt(message.get(1));
+
+        //search stock
+        Stock myStock = null;
+        for(Stock stock : stockList){
+            if (stock.getName().equals(stockName)){
+                myStock = stock;
+            }
+        }
+
+        //decrease stock
+        if(myStock != null){
+            myStock.setStockCount(myStock.getStockCount() - amount);
+        }
+
         return -1;
     }
     
-    public synchronized int sell(String stockName, int amount) throws JMSException {
-        //TODO
+    public synchronized int sell(String request) throws JMSException {
+        ArrayList<String> message = separateMessage(request);
+        String stockName = message.get(0);
+        int amount = Integer.parseInt(message.get(1));
+
+        //search stock
+        Stock myStock = null;
+        for(Stock stock : stockList){
+            if (stock.getName().equals(stockName)){
+                myStock = stock;
+            }
+        }
+
+        //decrease stock
+        if(myStock != null){
+            myStock.setStockCount(myStock.getStockCount() + amount);
+        }
         return -1;
     }
     
-    public synchronized List<Stock> getStockList() {
-//        List<Stock> stockList = new ArrayList<>();
 
-//        for (Topic topic : this.topics){
-//
-//        }
-//
-
-        /* TODO: populate stockList */
-
-        return stockList;
-    }
 }

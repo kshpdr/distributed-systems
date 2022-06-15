@@ -61,11 +61,7 @@ public class JmsBrokerClient {
     };
     
     public void requestList() throws JMSException {
-        //TODO
-        //Create a messages
-        RequestListMessage requestListMessage = new RequestListMessage();
-        TextMessage message = session.createTextMessage("list");
-
+        //Create a message
         String content = "list";
         ObjectMessage msg = session.createObjectMessage(content);
 
@@ -74,11 +70,21 @@ public class JmsBrokerClient {
     }
     
     public void buy(String stockName, int amount) throws JMSException {
-        //TODO
+
+        String content = "buy," + stockName + "," + amount;
+        ObjectMessage msg = session.createObjectMessage(content);
+
+        clientProducer.send(msg);
+        System.out.println("Command 'buy " + stockName + " " + amount + "' was sent");
     }
     
     public void sell(String stockName, int amount) throws JMSException {
-        //TODO
+
+        String content = stockName + "," + amount;
+        ObjectMessage msg = session.createObjectMessage(content);
+
+        clientProducer.send(msg);
+        System.out.println("Command 'sell " + stockName + " " + amount + "' was sent");
     }
     
     public void watch(String stockName) throws JMSException {
