@@ -3,11 +3,11 @@ package de.tu_berlin.cit.vs.jms.client;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.jms.*;
+import javax.jms.Queue;
 
 import de.tu_berlin.cit.vs.jms.common.BuyMessage;
 import de.tu_berlin.cit.vs.jms.common.ListMessage;
@@ -27,10 +27,11 @@ public class JmsBrokerClient {
     private Connection connection;
     private MessageProducer clientProducer;
     private MessageConsumer clientConsumer;
+    private List<String> clientStocks = new ArrayList<>(); // save stocks of client
 
     public JmsBrokerClient(String clientName) throws JMSException {
         this.clientName = clientName;
-        
+
         /* TODO: initialize connection, sessions, consumer, producer, etc. */
         // initialize connection factory with corresponding connection
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
@@ -53,52 +54,75 @@ public class JmsBrokerClient {
                     //TODO
                     String content = ((String) ((ObjectMessage) msg).getObject());
                     System.out.println(content);
+                    System.out.println("received content from broker");
                 }
             }
             catch (JMSException e){
             }
         }
     };
-    
+
     public void requestList() throws JMSException {
         //Create a message
         String content = "list";
         ObjectMessage msg = session.createObjectMessage(content);
-
         clientProducer.send(msg);
         System.out.println("Command 'list' was sent");
     }
-    
+
     public void buy(String stockName, int amount) throws JMSException {
 
         String content = "buy," + stockName + "," + amount;
         ObjectMessage msg = session.createObjectMessage(content);
-
         clientProducer.send(msg);
         System.out.println("Command 'buy " + stockName + " " + amount + "' was sent");
-    }
-    
-    public void sell(String stockName, int amount) throws JMSException {
 
+        while (amount != 0){
+            clientStocks.add(stockName);    //add amount of bought stocks to list
+            amount--;
+        }
+        System.out.println(clientStocks);
+    }
+
+    public void sell(String stockName, int amount) throws JMSException {
+        int count = 0; // count number of stocks in our list
+        for (String currentStock: clientStocks) {
+            if (stockName.equals(currentStock)) {
+                count++;
+            }
+        }
+        if (count < amount) {
+            System.out.println("You only have "+ count + " of " + stockName + " stocks to sell");
+            return; // we dont have enough stocks
+        }
         String content = stockName + "," + amount;
         ObjectMessage msg = session.createObjectMessage(content);
-
         clientProducer.send(msg);
         System.out.println("Command 'sell " + stockName + " " + amount + "' was sent");
+
+        // remove sold stocks from list
+        ListIterator<String> iter = clientStocks.listIterator();
+        while(iter.hasNext() && count != 0){
+            if(iter.next().equals(stockName)){
+                iter.remove();
+                count--;
+            }
+        }
+        System.out.println(clientStocks);
     }
-    
+
     public void watch(String stockName) throws JMSException {
         //TODO
     }
-    
+
     public void unwatch(String stockName) throws JMSException {
         //TODO
     }
-    
+
     public void quit() throws JMSException {
         //TODO
     }
-    
+
     /**
      * @param args the command line arguments
      */
@@ -107,14 +131,14 @@ public class JmsBrokerClient {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
             System.out.println("Enter the client name:");
             String clientName = reader.readLine();
-            
+
             JmsBrokerClient client = new JmsBrokerClient(clientName);
-            
+
             boolean running = true;
             while(running) {
                 System.out.println("Enter command:");
                 String[] task = reader.readLine().split(" ");
-                
+
                 synchronized(client) {
                     switch(task[0].toLowerCase()) {
                         case "quit":
@@ -159,11 +183,11 @@ public class JmsBrokerClient {
                     }
                 }
             }
-            
+
         } catch (JMSException | IOException ex) {
             Logger.getLogger(JmsBrokerClient.class.getName()).log(Level.SEVERE, null, ex);
         }
-        
+
     }
-    
+
 }

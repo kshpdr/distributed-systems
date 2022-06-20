@@ -7,7 +7,6 @@ import javax.jms.Queue;
 import de.tu_berlin.cit.vs.jms.common.*;
 import org.apache.activemq.ActiveMQConnectionFactory;
 
-
 public class SimpleBroker {
 
     private Session session;
@@ -17,8 +16,6 @@ public class SimpleBroker {
     private List<Stock> stockList;
     private ArrayList<Topic> topics = new ArrayList<>();
 
-
-    
     private final MessageListener listener = new MessageListener() {
         @Override
         public void onMessage(Message msg) {
@@ -27,29 +24,22 @@ public class SimpleBroker {
                     String request = ((String) ((ObjectMessage) msg).getObject());
                     System.out.println("Got a new message: " + request);
 
-
                     if (request.startsWith("list")){
                         String text = "";
                         for (Stock stock : stockList){
                              text += stock.toString();
                              text += "\n";
                         }
-
-
                         ObjectMessage response = session.createObjectMessage(text);
                         serverProducer.send(response);
                         System.out.println("Response was sent");
                     }
-
                     if(request.startsWith("buy")){
                         buy(request);
                     }
-
                     if(request.startsWith("sell")){
                         sell(request);
                     }
-
-
                 }
             }
             catch (JMSException e){
@@ -59,9 +49,7 @@ public class SimpleBroker {
 
     private ArrayList<String> separateMessage(String request) {
         ArrayList<String> message = new ArrayList<>();
-
-        String[]splitted = request.split(",");
-
+        String[] splitted = request.split(",");
         message.add(splitted[1]); //stockName
         message.add(splitted[2]); //amount
 
@@ -94,6 +82,7 @@ public class SimpleBroker {
     
     public void stop() throws JMSException {
         //TODO
+
     }
     
     public synchronized int buy(String request) throws JMSException {
@@ -108,12 +97,10 @@ public class SimpleBroker {
                 myStock = stock;
             }
         }
-
         //decrease stock
         if(myStock != null){
             myStock.setStockCount(myStock.getStockCount() - amount);
         }
-
         return -1;
     }
     
@@ -136,6 +123,4 @@ public class SimpleBroker {
         }
         return -1;
     }
-    
-
 }

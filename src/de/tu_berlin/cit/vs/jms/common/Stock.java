@@ -10,8 +10,8 @@ public class Stock implements Serializable {
     private double price;
     
     public Stock(String name, int stockCount, double startingPrice) {
-        this.stockCount = stockCount;
-        this.availableCount = stockCount;
+        this.stockCount = stockCount; // total number of stocks globally
+        this.availableCount = stockCount; // number of stocks available for buy
         this.name = name;
         this.price = startingPrice;
     }
