@@ -30,12 +30,21 @@ public class SimpleBroker {
                              text += stock.toString();
                              text += "\n";
                         }
+                        text += "this shit was printed within 'list' ";
                         ObjectMessage response = session.createObjectMessage(text);
                         serverProducer.send(response);
                         System.out.println("Response was sent");
                     }
                     if(request.startsWith("buy")){
-                        buy(request);
+                        if (buy(request) == -1) {
+                            String text = "-1: Not enough stocks available." + "\n";
+                            ObjectMessage response = session.createObjectMessage(text);
+                            serverProducer.send(response);
+                        } else if (buy(request) == 0) {
+                            String text = "0: Buying stocks now." + "\n";
+                            ObjectMessage response = session.createObjectMessage(text);
+                            serverProducer.send(response);
+                        }
                     }
                     if(request.startsWith("sell")){
                         sell(request);
@@ -99,9 +108,13 @@ public class SimpleBroker {
         }
         //decrease stock
         if(myStock != null){
-            myStock.setStockCount(myStock.getStockCount() - amount);
+            if (amount > myStock.getAvailableCount()) {
+                return -1;
+            } else {
+                myStock.setAvailableCount(myStock.getAvailableCount() - amount);
+            }
         }
-        return -1;
+        return 0;
     }
     
     public synchronized int sell(String request) throws JMSException {
@@ -117,10 +130,10 @@ public class SimpleBroker {
             }
         }
 
-        //decrease stock
+        //increase stock
         if(myStock != null){
-            myStock.setStockCount(myStock.getStockCount() + amount);
+            myStock.setAvailableCount(myStock.getAvailableCount() + amount);
         }
-        return -1;
+        return 0;
     }
 }

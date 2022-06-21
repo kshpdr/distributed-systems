@@ -28,6 +28,8 @@ public class JmsBrokerClient {
     private MessageProducer clientProducer;
     private MessageConsumer clientConsumer;
     private List<String> clientStocks = new ArrayList<>(); // save stocks of client
+    private String tmpStockName;
+    private int tmpAmount;
 
     public JmsBrokerClient(String clientName) throws JMSException {
         this.clientName = clientName;
@@ -55,6 +57,10 @@ public class JmsBrokerClient {
                     String content = ((String) ((ObjectMessage) msg).getObject());
                     System.out.println(content);
                     System.out.println("received content from broker");
+
+                    if (content.startsWith("0")){
+                        increaseClientStocks(tmpStockName, tmpAmount);
+                    }
                 }
             }
             catch (JMSException e){
@@ -71,17 +77,13 @@ public class JmsBrokerClient {
     }
 
     public void buy(String stockName, int amount) throws JMSException {
-
+        this.tmpAmount = amount;
+        this.tmpStockName = stockName;
         String content = "buy," + stockName + "," + amount;
         ObjectMessage msg = session.createObjectMessage(content);
         clientProducer.send(msg);
         System.out.println("Command 'buy " + stockName + " " + amount + "' was sent");
 
-        while (amount != 0){
-            clientStocks.add(stockName);    //add amount of bought stocks to list
-            amount--;
-        }
-        System.out.println(clientStocks);
     }
 
     public void sell(String stockName, int amount) throws JMSException {
@@ -108,6 +110,16 @@ public class JmsBrokerClient {
                 count--;
             }
         }
+        System.out.println("Your stocks: ");
+        System.out.println(clientStocks);
+    }
+
+    public void increaseClientStocks(String stockName, int amount) throws JMSException {
+        while (amount != 0){
+            clientStocks.add(stockName);    //add amount of bought stocks to list
+            amount--;
+        }
+        System.out.println("Your stocks: ");
         System.out.println(clientStocks);
     }
 
