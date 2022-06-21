@@ -30,7 +30,7 @@ public class SimpleBroker {
                              text += stock.toString();
                              text += "\n";
                         }
-                        text += "this shit was printed within 'list' ";
+                        //text += "this shit was printed within 'list' ";
                         ObjectMessage response = session.createObjectMessage(text);
                         serverProducer.send(response);
                         System.out.println("Response was sent");
@@ -40,7 +40,7 @@ public class SimpleBroker {
                             String text = "-1: Not enough stocks available." + "\n";
                             ObjectMessage response = session.createObjectMessage(text);
                             serverProducer.send(response);
-                        } else if (buy(request) == 0) {
+                        } else {
                             String text = "0: Buying stocks now." + "\n";
                             ObjectMessage response = session.createObjectMessage(text);
                             serverProducer.send(response);
@@ -93,7 +93,7 @@ public class SimpleBroker {
         //TODO
 
     }
-    
+
     public synchronized int buy(String request) throws JMSException {
         ArrayList<String> message = separateMessage(request);
         String stockName = message.get(0);

@@ -25,8 +25,8 @@ public class JmsBrokerClient {
     private final String clientName;
     private Session session;
     private Connection connection;
-    private MessageProducer clientProducer;
-    private MessageConsumer clientConsumer;
+    private MessageProducer clientProducer;   //wenn wir nachrichten an den SimpleBroker schreiben
+    private MessageConsumer clientConsumer;     //wenn wir Nachrichten vom SimpleBroker erhalten
     private List<String> clientStocks = new ArrayList<>(); // save stocks of client
     private String tmpStockName;
     private int tmpAmount;
@@ -125,6 +125,7 @@ public class JmsBrokerClient {
 
     public void watch(String stockName) throws JMSException {
         //TODO
+
     }
 
     public void unwatch(String stockName) throws JMSException {
@@ -141,7 +142,7 @@ public class JmsBrokerClient {
     public static void main(String[] args) {
         try {
             BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-            System.out.println("Enter the client name:");
+            System.out.println("Enter the client name: ");
             String clientName = reader.readLine();
 
             JmsBrokerClient client = new JmsBrokerClient(clientName);
