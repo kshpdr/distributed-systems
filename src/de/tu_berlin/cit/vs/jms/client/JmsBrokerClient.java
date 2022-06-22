@@ -28,6 +28,7 @@ public class JmsBrokerClient {
     private MessageProducer clientProducer;   //wenn wir nachrichten an den SimpleBroker schreiben
     private MessageConsumer clientConsumer;     //wenn wir Nachrichten vom SimpleBroker erhalten
     private List<String> clientStocks = new ArrayList<>(); // save stocks of client
+    private List<List<Object>> topicConsumers = new ArrayList<>();
     private String tmpStockName;
     private int tmpAmount;
 
@@ -142,12 +143,22 @@ public class JmsBrokerClient {
         MessageConsumer topicConsumer = session.createConsumer(topic);
         topicConsumer.setMessageListener(topicListener);
 
+        List topicConsumerAndName = new ArrayList();
+        topicConsumerAndName.add(stockName);
+        topicConsumerAndName.add(topicConsumer);
+        topicConsumers.add(topicConsumerAndName);
         System.out.println("Command 'watch " + stockName + "' was sent");
 
     }
 
     public void unwatch(String stockName) throws JMSException {
         //TODO
+        for (List topicConsumerAndName : topicConsumers){
+            if (((String)topicConsumerAndName.get(0)).startsWith(stockName)){
+                ((MessageConsumer)topicConsumerAndName.get(1)).close();
+                System.out.println("Stock " + stockName + " is now not being watched.");
+            }
+        }
     }
 
     public void quit() throws JMSException {
