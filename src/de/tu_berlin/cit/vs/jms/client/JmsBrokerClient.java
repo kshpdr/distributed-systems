@@ -68,6 +68,18 @@ public class JmsBrokerClient {
         }
     };
 
+    private final MessageListener topicListener = new MessageListener() {
+        @Override
+        public void onMessage(Message msg) {
+            TextMessage textMessage = (TextMessage) msg;
+            try {
+                System.out.println("received " + textMessage.getText());
+            } catch (JMSException e) {
+                e.printStackTrace();
+            }
+        }
+    };
+
     public void requestList() throws JMSException {
         //Create a message
         String content = "list";
@@ -125,6 +137,12 @@ public class JmsBrokerClient {
 
     public void watch(String stockName) throws JMSException {
         //TODO
+        //subscribe to existing topic
+        Topic topic = session.createTopic(stockName);
+        MessageConsumer topicConsumer = session.createConsumer(topic);
+        topicConsumer.setMessageListener(topicListener);
+
+        System.out.println("Command 'watch " + stockName + "' was sent");
 
     }
 

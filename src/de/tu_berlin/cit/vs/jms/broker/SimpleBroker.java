@@ -85,6 +85,8 @@ public class SimpleBroker {
         for(Stock stock : stockList) {
             /* TODO: prepare stocks as topics */
             Topic stockTopic = session.createTopic(stock.getName());
+            // createConsumer() is necessary because AcitveMQ is not for creation nut administration for exisiting topics
+            MessageConsumer topicConsumer = session.createConsumer(stockTopic);
             topics.add(stockTopic);
         }
     }
