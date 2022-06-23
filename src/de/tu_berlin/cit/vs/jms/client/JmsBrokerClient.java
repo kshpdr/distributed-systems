@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.jms.*;
 import javax.jms.Queue;
+import java.util.concurrent.TimeUnit;
 
 import de.tu_berlin.cit.vs.jms.common.BuyMessage;
 import de.tu_berlin.cit.vs.jms.common.ListMessage;
@@ -179,12 +180,28 @@ public class JmsBrokerClient {
     }
 
     public void quit() throws JMSException {
-        for(int i = 0; i < clientStocks.size(); i++){
-            if(clientStocks.size() == 0){
-                break;
-            }
-            sell(clientStocks.get(0), 1);
+        if (clientStocks.size() == 0) {
+            return;
         }
+        int cntA = 0;
+        int cntL = 0;
+        int cntR = 0;
+
+        for (int i = 0; i < clientStocks.size(); i++){
+            if (clientStocks.get(i).equals("aldi")) {
+                cntA++;
+            }
+            if (clientStocks.get(i).equals("lidl")) {
+                cntL++;
+            }
+            if (clientStocks.get(i).equals("rewe")) {
+                cntR++;
+            }
+        }
+        sell("aldi", cntA);
+        sell("lidl", cntL);
+        sell("rewe", cntR);
+
         String content = "quit," + clientName;
         ObjectMessage msg = session.createObjectMessage(content);
         clientProducer.send(msg);
