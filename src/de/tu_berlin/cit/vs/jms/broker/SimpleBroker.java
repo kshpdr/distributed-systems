@@ -22,7 +22,9 @@ public class SimpleBroker {
             try{
                 if(msg instanceof ObjectMessage) {
                     String request = ((String) ((ObjectMessage) msg).getObject());
+                    ArrayList<String> message = separateMessage(request);
                     System.out.println("Got a new message: " + request);
+
 
                     if (request.startsWith("list")){
                         String text = "";
@@ -30,24 +32,104 @@ public class SimpleBroker {
                              text += stock.toString();
                              text += "\n";
                         }
+                        String clientName = message.get(0);
+
+                        Queue queue = session.createQueue(clientName);
+                        MessageProducer queueProducer = session.createProducer(queue);
+
                         //text += "this shit was printed within 'list' ";
                         ObjectMessage response = session.createObjectMessage(text);
-                        serverProducer.send(response);
+                        queueProducer.send(response);
                         System.out.println("Response was sent");
                     }
                     if(request.startsWith("buy")){
+                        String stockName = message.get(0);
+                        String clientName = message.get(2);
+                        Queue queue = session.createQueue(clientName);
+                        MessageProducer queueProducer = session.createProducer(queue);
+
                         if (buy(request) == -1) {
                             String text = "-1: Not enough stocks available." + "\n";
                             ObjectMessage response = session.createObjectMessage(text);
-                            serverProducer.send(response);
+                            queueProducer.send(response);
                         } else {
                             String text = "0: Buying stocks now." + "\n";
                             ObjectMessage response = session.createObjectMessage(text);
-                            serverProducer.send(response);
+                            queueProducer.send(response);
+
+
+                            String information = "";
+                            Stock st = null;
+                            //find stock
+                            for(Stock stock : stockList){
+                                if(stock.getName().equals(stockName)){
+                                    st = stock;
+                                    break;
+                                }
+                            }
+                            information += st.toString();
+                            information += ", -" + message.get(1); //amount
+
+                            Topic topic = null;
+                            for (Topic t : topics){
+                                if (t.getTopicName().equals(stockName)){
+                                    topic = t;
+                                    break;
+                                }
+                            }
+
+                            MessageProducer topicProducer = session.createProducer(topic);
+                            ObjectMessage info = session.createObjectMessage(information);
+                            topicProducer.send(info);
+
+
                         }
                     }
                     if(request.startsWith("sell")){
-                        sell(request);
+                        String stockName = message.get(0);
+                        String clientName = message.get(2);
+                        Queue queue = session.createQueue(clientName);
+                        MessageProducer queueProducer = session.createProducer(queue);
+
+                       if(sell(request) == -1){
+                           System.out.println("Something went wrong");
+                       }else{
+                           String text = ": Selling stocks now." + "\n";
+                           ObjectMessage response = session.createObjectMessage(text);
+                           queueProducer.send(response);
+
+
+                           String information = "";
+                           Stock st = null;
+                           //find stock
+                           for(Stock stock : stockList){
+                               if(stock.getName().equals(stockName)){
+                                   st = stock;
+                                   break;
+                               }
+                           }
+                           information += st.toString();
+                           information += ", +" + message.get(1); //amount
+
+                           Topic topic = null;
+                           for (Topic t : topics){
+                               if (t.getTopicName().equals(stockName)){
+                                   topic = t;
+                                   break;
+                               }
+                           }
+
+                           MessageProducer topicProducer = session.createProducer(topic);
+                           ObjectMessage info = session.createObjectMessage(information);
+                           topicProducer.send(info);
+
+                       }
+
+
+                    }
+                    if(request.startsWith("quit")){
+                        String clientName = message.get(0);
+                        System.out.println("Client " + clientName + " is quitting..");
                     }
                 }
             }
@@ -60,7 +142,11 @@ public class SimpleBroker {
         ArrayList<String> message = new ArrayList<>();
         String[] splitted = request.split(",");
         message.add(splitted[1]); //stockName
-        message.add(splitted[2]); //amount
+        if(splitted.length > 2){
+            message.add(splitted[2]); //amount
+            message.add(splitted[3]); //clientName
+        }
+
 
         return message;
     }
@@ -74,20 +160,22 @@ public class SimpleBroker {
 
         // create session and queue for the messages
         this.session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue = session.createQueue("queue");
+        //Queue queue = session.createQueue("queue");
+        Topic topic = session.createTopic("Server Topic");
 
         //create consumer and start a message listener
-        this.serverConsumer = session.createConsumer(queue);
-        this.serverProducer = session.createProducer(queue);
+        this.serverConsumer = session.createConsumer(topic);
+        this.serverProducer = session.createProducer(topic);
         serverConsumer.setMessageListener(listener);
 
         this.stockList = stockList;
         for(Stock stock : stockList) {
             /* TODO: prepare stocks as topics */
             Topic stockTopic = session.createTopic(stock.getName());
-            // createConsumer() is necessary because AcitveMQ is not for creation nut administration for exisiting topics
+            // createConsumer() is necessary because AcitveMQ is not for creation but administration for existing topics
             MessageConsumer topicConsumer = session.createConsumer(stockTopic);
             topics.add(stockTopic);
+
         }
     }
     
@@ -100,6 +188,7 @@ public class SimpleBroker {
         ArrayList<String> message = separateMessage(request);
         String stockName = message.get(0);
         int amount = Integer.parseInt(message.get(1));
+
 
         //search stock
         Stock myStock = null;

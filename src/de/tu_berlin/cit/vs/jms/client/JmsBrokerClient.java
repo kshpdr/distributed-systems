@@ -27,6 +27,8 @@ public class JmsBrokerClient {
     private Connection connection;
     private MessageProducer clientProducer;   //wenn wir nachrichten an den SimpleBroker schreiben
     private MessageConsumer clientConsumer;     //wenn wir Nachrichten vom SimpleBroker erhalten
+    private MessageConsumer queueConsumer;
+    private MessageProducer queueProducer;
     private List<String> clientStocks = new ArrayList<>(); // save stocks of client
     private List<List<Object>> topicConsumers = new ArrayList<>();
     private String tmpStockName;
@@ -43,10 +45,17 @@ public class JmsBrokerClient {
 
         // create session and queue for the messages
         this.session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        Queue queue = session.createQueue("queue");
-        this.clientProducer = session.createProducer(queue);
-        this.clientConsumer = session.createConsumer(queue);
-        clientConsumer.setMessageListener(listener);
+
+        Topic topic = session.createTopic("Server Topic");
+        this.clientProducer = session.createProducer(topic);
+        //this.clientConsumer = session.createConsumer(topic);
+        //clientConsumer.setMessageListener(listener);
+
+        //for 1:1 connection
+        Queue queue = session.createQueue(clientName);
+        this.queueConsumer = session.createConsumer(queue);
+        this.queueProducer = session.createProducer(queue);
+        queueConsumer.setMessageListener(listener);
     }
 
     private final MessageListener listener = new MessageListener() {
@@ -72,18 +81,26 @@ public class JmsBrokerClient {
     private final MessageListener topicListener = new MessageListener() {
         @Override
         public void onMessage(Message msg) {
-            TextMessage textMessage = (TextMessage) msg;
-            try {
-                System.out.println("received " + textMessage.getText());
-            } catch (JMSException e) {
-                e.printStackTrace();
+            try{
+                if(msg instanceof ObjectMessage) {
+                    //TODO
+                    String content = ((String) ((ObjectMessage) msg).getObject());
+                    System.out.println(content);
+                    System.out.println("received content from stock");
+
+                    if (content.startsWith("0")){
+                        increaseClientStocks(tmpStockName, tmpAmount);
+                    }
+                }
+            }
+            catch (JMSException e){
             }
         }
     };
 
     public void requestList() throws JMSException {
         //Create a message
-        String content = "list";
+        String content = "list," + clientName;
         ObjectMessage msg = session.createObjectMessage(content);
         clientProducer.send(msg);
         System.out.println("Command 'list' was sent");
@@ -92,7 +109,7 @@ public class JmsBrokerClient {
     public void buy(String stockName, int amount) throws JMSException {
         this.tmpAmount = amount;
         this.tmpStockName = stockName;
-        String content = "buy," + stockName + "," + amount;
+        String content = "buy," + stockName + "," + amount + "," + clientName;
         ObjectMessage msg = session.createObjectMessage(content);
         clientProducer.send(msg);
         System.out.println("Command 'buy " + stockName + " " + amount + "' was sent");
@@ -110,7 +127,7 @@ public class JmsBrokerClient {
             System.out.println("You only have "+ count + " of " + stockName + " stocks to sell");
             return; // we dont have enough stocks
         }
-        String content = stockName + "," + amount;
+        String content = "sell," + stockName + "," + amount + "," + clientName;
         ObjectMessage msg = session.createObjectMessage(content);
         clientProducer.send(msg);
         System.out.println("Command 'sell " + stockName + " " + amount + "' was sent");
@@ -162,7 +179,16 @@ public class JmsBrokerClient {
     }
 
     public void quit() throws JMSException {
-        //TODO
+        for(int i = 0; i < clientStocks.size(); i++){
+            if(clientStocks.size() == 0){
+                break;
+            }
+            sell(clientStocks.get(0), 1);
+        }
+        String content = "quit," + clientName;
+        ObjectMessage msg = session.createObjectMessage(content);
+        clientProducer.send(msg);
+        System.out.println("Command 'quit' was sent");
     }
 
     /**
