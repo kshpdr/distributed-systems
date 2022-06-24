@@ -26,8 +26,7 @@ public class JmsBrokerClient {
     private final String clientName;
     private Session session;
     private Connection connection;
-    private MessageProducer clientProducer;   //wenn wir nachrichten an den SimpleBroker schreiben
-    private MessageConsumer clientConsumer;     //wenn wir Nachrichten vom SimpleBroker erhalten
+    private MessageProducer clientProducer;     //wenn wir nachrichten an den SimpleBroker schreiben
     private MessageConsumer queueConsumer;
     private MessageProducer queueProducer;
     private List<String> clientStocks = new ArrayList<>(); // save stocks of client
@@ -38,7 +37,6 @@ public class JmsBrokerClient {
     public JmsBrokerClient(String clientName) throws JMSException {
         this.clientName = clientName;
 
-        /* TODO: initialize connection, sessions, consumer, producer, etc. */
         // initialize connection factory with corresponding connection
         ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
         this.connection = connectionFactory.createConnection();
@@ -48,9 +46,7 @@ public class JmsBrokerClient {
         this.session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
 
         Topic topic = session.createTopic("Server Topic");
-        this.clientProducer = session.createProducer(topic);
-        //this.clientConsumer = session.createConsumer(topic);
-        //clientConsumer.setMessageListener(listener);
+        this.clientProducer = session.createProducer(topic);   //create connection to server
 
         //for 1:1 connection
         Queue queue = session.createQueue(clientName);
@@ -64,7 +60,6 @@ public class JmsBrokerClient {
         public void onMessage(Message msg) {
             try{
                 if(msg instanceof ObjectMessage) {
-                    //TODO
                     String content = ((String) ((ObjectMessage) msg).getObject());
                     System.out.println(content);
                     System.out.println("received content from broker");
@@ -84,7 +79,6 @@ public class JmsBrokerClient {
         public void onMessage(Message msg) {
             try{
                 if(msg instanceof ObjectMessage) {
-                    //TODO
                     String content = ((String) ((ObjectMessage) msg).getObject());
                     System.out.println(content);
                     System.out.println("received content from stock");
@@ -155,7 +149,6 @@ public class JmsBrokerClient {
     }
 
     public void watch(String stockName) throws JMSException {
-        //TODO
         //subscribe to existing topic
         Topic topic = session.createTopic(stockName);
         MessageConsumer topicConsumer = session.createConsumer(topic);
@@ -170,10 +163,9 @@ public class JmsBrokerClient {
     }
 
     public void unwatch(String stockName) throws JMSException {
-        //TODO
         for (List topicConsumerAndName : topicConsumers){
             if (((String)topicConsumerAndName.get(0)).startsWith(stockName)){
-                ((MessageConsumer)topicConsumerAndName.get(1)).close();
+                ((MessageConsumer)topicConsumerAndName.get(1)).close();     //close topic
                 System.out.println("Stock " + stockName + " is now not being watched.");
             }
         }
