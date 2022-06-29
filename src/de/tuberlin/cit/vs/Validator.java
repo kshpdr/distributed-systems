@@ -8,7 +8,7 @@ import java.io.IOException;
 public class Validator {
     public static void main(String[] args) {
         try {
-            ActiveMQConnectionFactory conFactory = new ActiveMQConnectionFactory();
+            ActiveMQConnectionFactory conFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
             conFactory.setTrustAllPackages(true);
             Connection con = conFactory.createConnection();
 
