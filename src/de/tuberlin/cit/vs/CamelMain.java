@@ -8,6 +8,7 @@ import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.processor.aggregate.AggregationStrategy;
 
 public class CamelMain {
+
     private static Processor voteFactory = new Processor() {
         @Override
         public void process(Exchange exchange) throws Exception {
@@ -18,10 +19,40 @@ public class CamelMain {
         }
     };
 
+    private static Processor orderFactory = new Processor() {
+        private int orderId = 0;
+
+        @Override
+        public void process(Exchange exchange) throws Exception {
+            String[] parts = exchange.getIn().getBody(String.class).split(",");
+            String customerId = parts[0];
+
+            String[] fullName = parts[1].split(" ");
+            String firstName = fullName[0];
+            String lastName = fullName[1];
+
+            String surfboardsNumber = parts[2];
+            String suitsNumber = parts[3];
+
+            String orderId = String.valueOf(this.orderId);
+            this.orderId++;
+
+            Order order = new Order(orderId, customerId, firstName, lastName, surfboardsNumber, suitsNumber);
+            exchange.getIn().setBody(order);
+            // for debug
+            //System.out.println(order.toString());
+        }
+    };
+
     public static class VoteFilter {
         public boolean isYesVote(Vote vote) {
             return vote.getVote();
         }
+    }
+
+    // not necessary yet, might be later
+    public static class OrderFilter {
+        public boolean isYesOrder(Order order) {return true;}
     }
 
     public static class CountingAggregation implements AggregationStrategy {
@@ -44,7 +75,26 @@ public class CamelMain {
         RouteBuilder route = new RouteBuilder() {
             @Override
             public void configure() throws Exception {
-                from("file:votes?noop=true")
+                // For CallCenterOrderSystem:
+                from("file:data/call_center_orders?noop=true")
+                        .split(body().tokenize("\n"))
+                        .process(orderFactory)
+                        .to("activemq:queue:billingIn");
+
+                //OrderFilter orderFilter = new OrderFilter();
+
+                from("activemq:queue:billingOut")
+                    .choice()
+                        .when(header("payed"))
+                            //.filter(method(orderFilter, "isYesOrder"))
+                            .aggregate(constant(0), new CountingAggregation()).completionInterval(5)
+                            .to("stream:out")
+                            .end()
+                        .endChoice().otherwise()
+                            .to("stream:err");
+
+                //here change to your absolute path to votes, its for test purposes anyway
+                from("file:/Users/koselev/Desktop/VS/vs_uebung_4_gruppe_1/src/votes?noop=true")
                     .split(body().tokenize("\n"))
                     .process(voteFactory)
                     .to("activemq:queue:validationIn");

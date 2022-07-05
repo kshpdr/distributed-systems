@@ -22,22 +22,22 @@ public class CallCenterOrderSystem {
     private static int orderCounter = 0;
 
     public static String generateOrder(){
+        // TODO: delete orderId from here, necessary in OrderFactory, not in Call Center
         // generate fake names
         Faker faker = new Faker();
         String firstName = faker.name().firstName();
         String lastName = faker.name().lastName();
 
         // generate random numbers from 1 to 8
-        int surfboardsNumber = (int)((Math.random() * (8 - 1)) + 1);
-        int suitsNumber = (int)((Math.random() * (8 - 1)) + 1);
+        String surfboardsNumber = String.valueOf((int)((Math.random() * (8 - 1)) + 1));
+        String suitsNumber = String.valueOf((int)((Math.random() * (8 - 1)) + 1));
 
         //generate random id from 1 to 100000
-        int customerId = (int)((Math.random() * (100000 - 1)) + 1);
+        String customerId = String.valueOf((int)((Math.random() * (100000 - 1)) + 1));
         String orderId = "call" + String.valueOf(orderCounter);
-        Boolean checked = false;
 
         // instantiate order
-        Order order = new Order(orderId, customerId, firstName, lastName, surfboardsNumber, suitsNumber, checked);
+        Order order = new Order(orderId, customerId, firstName, lastName, surfboardsNumber, suitsNumber);
 
         orderCounter++;
         return order.getOrderForCall();
@@ -58,6 +58,7 @@ public class CallCenterOrderSystem {
                 // generate random amount of orders from 1 to 20 to one file
                 int ordersNumber = (int)((Math.random() * (20 - 1)) + 1);
                 for (int i = 0; i < ordersNumber; i++) {
+                    // write the orders in the file
                     String order = generateOrder() + "\n";
                     FileWriter fw = new FileWriter(orderPath, true);
                     BufferedWriter bw = new BufferedWriter(fw);

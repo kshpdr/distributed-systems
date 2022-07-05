@@ -5,30 +5,35 @@ import java.util.Arrays;
 
 public class Order implements Serializable {
 
+    // TODO: understand, what valid is used for
     private String orderId;
-    private int customerId;
+    private String customerId;
     private String firstName;
     private String lastName;
-    private int surfboardsNumber;
-    private int suitsNumber;
-    private Boolean order;
+    private String surfboardsNumber;
+    private String suitsNumber;
+    private String valid;
+    private String validationResult = "false";
 
-    public Order(String orderId, int customerId, String firstName, String lastName, int surfboardsNumber, int suitsNumber, Boolean order) {
+    public Order(String orderId, String customerId, String firstName, String lastName, String surfboardsNumber, String suitsNumber) {
         this.orderId = orderId;
         this.customerId = customerId;
         this.firstName = firstName;
         this.lastName = lastName;
         this.surfboardsNumber = surfboardsNumber;
         this.suitsNumber = suitsNumber;
-        this.order = order;
+    }
+
+    public Order(String customerId, String firstName, String lastName, String surfboardsNumber, String suitsNumber) {
+        this.customerId = customerId;
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.surfboardsNumber = surfboardsNumber;
+        this.suitsNumber = suitsNumber;
     }
 
     public String getOrderId() {
         return orderId;
-    }
-
-    public Boolean getOrder() {
-        return order;
     }
 
     public String getOrderForWeb(){
@@ -39,6 +44,10 @@ public class Order implements Serializable {
         return String.join(",", Arrays.asList(String.valueOf(customerId), firstName + " " + lastName, String.valueOf(surfboardsNumber), String.valueOf(suitsNumber)));
     }
 
+    public void validate(){
+        this.validationResult = "true";
+    }
+
     @Override
     public String toString() {
         return "Order{" +
@@ -47,7 +56,6 @@ public class Order implements Serializable {
                 "full name='" + firstName + " " + lastName + '\'' +
                 "surfboardsNumber='" + String.valueOf(surfboardsNumber) + '\'' +
                 "suitsNumber='" + String.valueOf(suitsNumber) + '\'' +
-                ", order=" + order +
                 '}';
     }
 }
