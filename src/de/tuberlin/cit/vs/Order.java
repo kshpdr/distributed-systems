@@ -12,8 +12,65 @@ public class Order implements Serializable {
     private String lastName;
     private String surfboardsNumber;
     private String suitsNumber;
-    private String valid;
+    private String valid = "0";
     private String validationResult = "false";
+
+
+    public String getCustomerId() {
+        return customerId;
+    }
+
+    public void setCustomerId(String customerId) {
+        this.customerId = customerId;
+    }
+
+    public String getFirstName() {
+        return firstName;
+    }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
+    public String getSurfboardsNumber() {
+        return surfboardsNumber;
+    }
+
+    public void setSurfboardsNumber(String surfboardsNumber) {
+        this.surfboardsNumber = surfboardsNumber;
+    }
+
+    public String getSuitsNumber() {
+        return suitsNumber;
+    }
+
+    public void setSuitsNumber(String suitsNumber) {
+        this.suitsNumber = suitsNumber;
+    }
+
+    public String getValid() {
+        return valid;
+    }
+
+    public void setValid(String valid) {
+        this.valid = valid;
+    }
+
+    public String getValidationResult() {
+        return validationResult;
+    }
+
+    public void setValidationResult(String validationResult) {
+        this.validationResult = validationResult;
+    }
 
     public Order(String orderId, String customerId, String firstName, String lastName, String surfboardsNumber, String suitsNumber) {
         this.orderId = orderId;

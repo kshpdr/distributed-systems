@@ -8,7 +8,13 @@ import java.util.*;
 
 // TODO: send the messages directly to the CamelMain, probably with Java Beans
 
+
+
+
 public class WebOrderSystem {
+
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_RESET = "\u001B[0m";
 
     private static int orderCounter = 0;
 
@@ -45,10 +51,12 @@ public class WebOrderSystem {
 
     public static void main(String[] args) {
         while(true){
+
             Timer timer = new Timer();
 
             // generates new order every 20 seconds
-            timer.scheduleAtFixedRate(task, 5*1000, 5*1000);
+            timer.scheduleAtFixedRate(task, 5 * 1000, 5 * 1000);
+
         }
     }
 }
