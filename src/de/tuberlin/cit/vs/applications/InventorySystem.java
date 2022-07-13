@@ -12,6 +12,7 @@ public class InventorySystem {
     public static final String inventoryPath = "data/inventory_validated_orders/inventory_validation.txt";
     public static final String validatedPath = "data/validated_orders/validated_orders.txt";
     public static final String ackPath = "data/ACK.txt";
+    public static int count = 0;
 
     static {
         File file = new File(inventoryPath);
@@ -29,7 +30,7 @@ public class InventorySystem {
         bw.close();
     }
 
-    private static void updateFile(String validatedPath, String validatedOrder) throws IOException {
+    private static void updateFile(int count, String validatedOrder) throws IOException {
         //wait till billingOrder has finished
         while (true){
             int condition = 0;
@@ -45,8 +46,9 @@ public class InventorySystem {
 
         }
 
-        writeToFile(validatedPath, validatedOrder, true);
+        writeToFile("data/validated_orders/validated_orders_" + count + ".txt", validatedOrder, true);
         writeToFile(ackPath, "OKFromInventory", false);
+
     }
 
     public static void main(String[] args) throws JMSException {
@@ -79,7 +81,8 @@ public class InventorySystem {
                         String validatedOrder = order.getOrderForCall() + ",0," + order.getValid() + "\n";
 
                         writeToFile(inventoryPath, validatedOrder, true);
-                        updateFile(validatedPath, validatedOrder);
+                        updateFile(InventorySystem.count, validatedOrder);
+                        InventorySystem.count++;
 
                         //MessageProducer producer = session.createProducer(outQueue);
                         //producer.send(answer);

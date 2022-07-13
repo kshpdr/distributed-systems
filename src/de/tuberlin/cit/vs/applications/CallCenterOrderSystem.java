@@ -11,6 +11,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -20,6 +21,7 @@ public class CallCenterOrderSystem {
     // to track list of saved orders
     private static int orderListId = 0;
     private static int orderCounter = 0;
+
 
     public static String generateOrder(){
         // TODO: delete orderId from here, necessary in OrderFactory, not in Call Center
@@ -72,12 +74,12 @@ public class CallCenterOrderSystem {
         }
     };
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException, InterruptedException {
         while(true){
             Timer timer = new Timer();
-
             // generates new order every 2 minutes (for debug 10 seconds)
             timer.scheduleAtFixedRate(task, 10*1000, 10*1000);
+
         }
     }
 }

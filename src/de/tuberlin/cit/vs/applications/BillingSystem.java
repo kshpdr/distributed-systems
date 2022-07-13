@@ -22,6 +22,8 @@ public class BillingSystem {
     public static final String billingPath = "data/billing_validated_orders/billing_validation.txt";
     public static final String validatedPath = "data/validated_orders/validated_orders.txt";
     public static final String ackPath = "data/ACK.txt";
+    public static int count = 0;
+
 
     static {
         File file = new File(billingPath);
@@ -38,7 +40,7 @@ public class BillingSystem {
         bw.close();
     }
 
-    private static void updateFile(String validatedPath, String validatedOrder) throws IOException {
+    private static void updateFile(int count, String validatedOrder) throws IOException {
         //wait till billingOrder has finished
         while (true) {
             int condition = 0;
@@ -54,12 +56,14 @@ public class BillingSystem {
 
         }
 
-        writeToFile(validatedPath, validatedOrder, true);
+        writeToFile("data/validated_orders/validated_orders_" + count + ".txt", validatedOrder, true);
         writeToFile(ackPath, "OKFromBilling", false);
+
 
     }
 
     public static void main(String[] args) throws JMSException {
+
         try {
             ActiveMQConnectionFactory conFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
             conFactory.setTrustAllPackages(true);
@@ -71,6 +75,7 @@ public class BillingSystem {
             Queue billingOut = session.createQueue("billingOut");
             MessageConsumer consumer = session.createConsumer(billingIn);
             consumer.setMessageListener(new MessageListener() {
+
                 @Override
                 public void onMessage(Message message) {
                     try {
@@ -91,7 +96,8 @@ public class BillingSystem {
                         String validatedOrder = order.getOrderForCall() + "," + order.getValid() + ",0\n";
 
                         writeToFile(billingPath, validatedOrder, true);
-                        updateFile(validatedPath, validatedOrder);
+                        updateFile(BillingSystem.count, validatedOrder);
+                        BillingSystem.count++;
 
                         //MessageProducer producer = session.createProducer(billingOut);
                         //producer.send(answer);
