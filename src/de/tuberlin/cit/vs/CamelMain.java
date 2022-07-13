@@ -35,33 +35,11 @@ class StringAggregationStrategy implements AggregationStrategy {
 
 public class CamelMain {
 
-    private static Processor voteFactory = new Processor() {
-        @Override
-        public void process(Exchange exchange) throws Exception {
-            String[] parts = exchange.getIn().getBody(String.class).split("\\-");
-            String voterId = parts[0];
-            Boolean vote = parts[1].equalsIgnoreCase("yes");
-            exchange.getIn().setBody(new Vote(voterId, vote));
 
-        }
-    };
-
-    private static Processor billingValidationFactory = new Processor() {
-        @Override
-        public void process(Exchange exchange) throws Exception {
-            System.out.println(exchange.getIn());
-        }
-    };
-
-    private static Processor inventoryValidationFactory = new Processor() {
-        @Override
-        public void process(Exchange exchange) throws Exception {
-            System.out.println(exchange.getIn());
-        }
-    };
 
     private static Processor validationFactory = new Processor() {
         private int orderId = 0;
+        private int switcher = 0;
         @Override
         public void process(Exchange exchange) throws Exception {
             //System.out.println(exchange.getIn());
@@ -84,7 +62,11 @@ public class CamelMain {
             if(inventoryValidation.equals("1")) available = true;
 
             String orderId = String.valueOf(this.orderId);
-            this.orderId++;
+            this.switcher++;
+            if(this.switcher == 2) {
+                this.switcher = 0;
+                this.orderId++;
+            }
 
             Order order = new Order(orderId, customerId, firstName, lastName, surfboardsNumber, suitsNumber);
             exchange.getIn().setBody(order);
@@ -119,28 +101,6 @@ public class CamelMain {
     };
 
 
-    public static class VoteFilter {
-        public boolean isYesVote(Vote vote) {
-            return vote.getVote();
-        }
-    }
-
-    // not necessary yet, might be later
-    public static class OrderFilter {
-        public boolean isYesOrder(Order order) {return true;}
-    }
-
-    public static class CountingAggregation implements AggregationStrategy {
-        private int count = 0;
-
-        @Override
-        public Exchange aggregate(Exchange exchange, Exchange exchange1) {
-            count++;
-            exchange1.getIn().setBody(count);
-            return exchange1;
-        }
-    }
-
     public static void main(String[] args) throws Exception {
         DefaultCamelContext ctxt = new DefaultCamelContext();
         ActiveMQComponent activeMQComponent = ActiveMQComponent.activeMQComponent();
@@ -152,7 +112,7 @@ public class CamelMain {
             public void configure() throws Exception {
                 //Point-To-Point-Channel from CallCenterOderSystem to Publish-Subscribe-Channel:
                 //
-                //                        [P2P]           [PubSub]  /-----> BillingSystem    -----> ...
+                //     [Msg Translator]   [P2P]           [PubSub]  /-----> BillingSystem    -----> ...
                 //  DATA --------> order -----> billingIn --------><
                 //                                                  \-----> InventorySystem  -----> ...
                 //
@@ -161,72 +121,32 @@ public class CamelMain {
                         .split(body().tokenize("\n"))
                         .process(orderFactory)
                         .to("activemq:topic:billingIn");
+                //
+                // billingSystem    ----->\
+                //                         > ----> validated_orders.txt
+                // inventorySystem  ----->/
+                //
 
 
+
+                //
+                // validated_orders[i]   ----->\
+                //                              > [Aggregator] -----> validation
+                // validated_orders[i+1] ----->/
+                //
                 from("file:data/validated_orders?noop=true")
                         .split(body().tokenize("\n"))
                         .process(validationFactory)
                         .aggregate(constant(0), new StringAggregationStrategy()).completionSize(2)
                         .to("activemq:queue:validation");
 
+
+
                 from("activemq:queue:validation").choice()
                         .when(header("valid")).to("stream:out")
                         .otherwise().to("stream:err");
 
 
-                /*
-                //               [P2P]
-                // billingOut    ---->\
-                //                     >------>billingValidationIn
-                // inventoryOut  ---->/
-                //               [P2P]
-
-                from("activemq:queue:billingOut")
-                        .to("activemq:queue:billingValidationIn");
-
-
-                from("activemq:queue:inventoryOut")
-                        .to("activemq:queue:billingValidationIn");
-
-
-                //
-                //  billingValidationIn[billingOut]   -----> \
-                //                                            > [Aggregator] ----> billingValidationOut
-                //  billingValidationIn[inventoryOut] -----> /
-                //
-
-                from("activemq:queue:billingValidationIn")
-                        .aggregate(constant(0), new StringAggregationStrategy()).completionSize(2)
-                        .to("activemq:queue:billingValidationOut");
-
-
-                from("activemq:queue:billingValidationOut").choice()
-                        .when(header("valid")).to("stream:out")
-                        //.filter(method(orderFilter, "isYesOrder"))
-                        //.aggregate(constant(0), new StringAggregationStrategy()).completionInterval(2)
-                        .otherwise().to("stream:err");
-
-                 */
-/*
-                //here change to your absolute path to votes, its for test purposes anyway
-                from("file:src/votes?noop=true")
-                    .split(body().tokenize("\n"))
-                    .process(voteFactory)
-                    .to("activemq:queue:validationIn");
-
-                VoteFilter voteFilter = new VoteFilter();
-
-                from("activemq:queue:validationOut")
-                    .choice()
-                        .when(header("validated"))
-                            .filter(method(voteFilter, "isYesVote"))
-                            .aggregate(constant(0), new CountingAggregation()).completionInterval(5)
-                            .to("stream:out")
-                            .end()
-                        .endChoice().otherwise()
-                            .to("stream:err");
-
- */
             }
         };
 

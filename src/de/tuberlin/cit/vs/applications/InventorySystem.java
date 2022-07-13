@@ -57,10 +57,8 @@ public class InventorySystem {
             conFactory.setTrustAllPackages(true);
             Connection con = conFactory.createConnection();
 
-            // created two queues for getting and sending messages back
             final Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
             Topic billingIn = session.createTopic("billingIn");
-            Queue billingOut = session.createQueue("billingOut");
             MessageConsumer consumer = session.createConsumer(billingIn);
             consumer.setMessageListener(new MessageListener() {
                 @Override
@@ -72,11 +70,9 @@ public class InventorySystem {
                         order.validate();
 
                         // randomly decide whether item is there or not
-                        ObjectMessage answer = session.createObjectMessage(order);
                         boolean available = Math.random() > 0.5;
-                        answer.setBooleanProperty("available", available);
                         if(available) order.setValid("1");
-                        answer.setBooleanProperty("payed", false);
+
 
                         String validatedOrder = order.getOrderForCall() + ",0," + order.getValid() + "\n";
 
@@ -84,8 +80,6 @@ public class InventorySystem {
                         updateFile(InventorySystem.count, validatedOrder);
                         InventorySystem.count++;
 
-                        //MessageProducer producer = session.createProducer(outQueue);
-                        //producer.send(answer);
                     } catch (JMSException e) {
                         e.printStackTrace();
                     } catch (IOException e) {
