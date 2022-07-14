@@ -71,9 +71,17 @@ public class WebOrderSystem {
                 Thread.sleep(5000);
 
                 String order = generateOrder() + "\n";
+/*
+                order += generateOrder() + "\n";
+                order += generateOrder() + "\n";
+                order += generateOrder() + "\n";
+                order += generateOrder() + "\n";
+
+ */
+
                 TextMessage textMessage = session.createTextMessage(order);
                 prod.send(textMessage);
-                System.out.println(ANSI_YELLOW + "New order created and sent." + ANSI_RESET);
+                System.out.println(ANSI_YELLOW + "New order created and sent: " + order + ANSI_RESET);
             }
 
 

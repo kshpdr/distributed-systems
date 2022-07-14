@@ -153,7 +153,9 @@ public class CamelMain {
                         .to("activemq:queue:validation");
 
 
-
+                //
+                // validation ----> [Content Enricher + Content based Router] ----> validation2
+                //
                 from("activemq:queue:validation").choice()
                         .when(header("valid")).process(validationFactory2).to("activemq:queue:validation2")
                         .otherwise().to("activemq:queue:validation2");
