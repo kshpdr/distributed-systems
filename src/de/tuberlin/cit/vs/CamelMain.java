@@ -110,6 +110,8 @@ public class CamelMain {
         RouteBuilder route = new RouteBuilder() {
             @Override
             public void configure() throws Exception {
+
+
                 //Point-To-Point-Channel from CallCenterOderSystem to Publish-Subscribe-Channel:
                 //
                 //     [Msg Translator]   [P2P]           [PubSub]  /-----> BillingSystem    -----> ...
