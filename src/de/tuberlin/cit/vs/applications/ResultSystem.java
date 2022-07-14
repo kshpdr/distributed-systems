@@ -14,15 +14,6 @@ import java.io.IOException;
 
 public class ResultSystem {
 
-    public static final String results = "data/validated_orders/inventory_validation.txt";
-
-    public static void writeToFile(String path, String content, Boolean append) throws IOException {
-        FileWriter fw = new FileWriter(path, append);
-        BufferedWriter bw = new BufferedWriter(fw);
-        bw.write(content);
-        bw.close();
-    }
-
     public static void main(String[] args) throws JMSException {
         try {
             ActiveMQConnectionFactory conFactory = new ActiveMQConnectionFactory("tcp://localhost:61616");
@@ -31,7 +22,7 @@ public class ResultSystem {
 
             // listen to the topic: billingIn
             final Session session = con.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Queue validate = session.createQueue("validation");
+            Queue validate = session.createQueue("validation2");
             MessageConsumer consumer = session.createConsumer(validate);
 
             consumer.setMessageListener(new MessageListener() {
@@ -41,6 +32,11 @@ public class ResultSystem {
                     try {
                         Order order = (Order)((ObjectMessage)message).getObject();
 
+                        if(order.getFullValidity().equals("1")){
+                            System.out.println("Order successfull: " + order);
+                        }else{
+                            System.err.println("Order failed: " + order);
+                        }
 
 
                     } catch (JMSException e) {

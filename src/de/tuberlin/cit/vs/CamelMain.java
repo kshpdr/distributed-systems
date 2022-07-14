@@ -35,7 +35,15 @@ class StringAggregationStrategy implements AggregationStrategy {
 
 public class CamelMain {
 
+    private static Processor validationFactory2 = new Processor() {
+        @Override
+        public void process(Exchange exchange) throws Exception {
+            Order order = exchange.getIn().getBody(Order.class);
 
+            order.setFullValidity("1");
+            exchange.getIn().setBody(order);
+        }
+    };
 
     private static Processor validationFactory = new Processor() {
         private int orderId = 0;
@@ -53,6 +61,8 @@ public class CamelMain {
 
             String surfboardsNumber = parts[2];
             String suitsNumber = parts[3];
+
+
 
             boolean payed = false;
             boolean available = false;
@@ -145,8 +155,8 @@ public class CamelMain {
 
 
                 from("activemq:queue:validation").choice()
-                        .when(header("valid")).to("stream:out")
-                        .otherwise().to("stream:err");
+                        .when(header("valid")).process(validationFactory2).to("activemq:queue:validation2")
+                        .otherwise().to("activemq:queue:validation2");
 
 
             }

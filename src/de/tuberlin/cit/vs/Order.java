@@ -14,7 +14,15 @@ public class Order implements Serializable {
     private String suitsNumber;
     private String valid = "0";
     private String validationResult = "false";
+    private String fullValidity = "0";
 
+    public String getFullValidity() {
+        return fullValidity;
+    }
+
+    public void setFullValidity(String fullValidity) {
+        this.fullValidity = fullValidity;
+    }
 
     public String getCustomerId() {
         return customerId;
