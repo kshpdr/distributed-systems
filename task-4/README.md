@@ -1,20 +1,18 @@
-Wie ich das zum Laufen bringe?
+# How to run it?
 
-0. folgende Ordner im data directory erstellen:
+1. Create following folders:
 - billing_validated_orders
 - call_center_orders
 - inventory_validated_orders
 - validated_orders
 
-1. ActiveMQ starten
-2. Das Projekt als Maven konfigurieren und pom.xml mit Dependencies vorhanden haben
-3. Die Dateien in folgender Reihenfolge ausführen lassen:
+2. Start ActiveMQ 
+3. Configure as a  Maven project konfigurieren having pom.xml and all dependencies
+4. Run files in following order:
 
-
-- BillingSystem: Bevor die Bestellungen kommen, müssen wir schon gucken, ob genug Geld gibt oder?
+- BillingSystem: before order comes, we should check, whether we have enough money.
 - InventorySysten
 - CallCenterOrderSystem
 - CamelMain
 - WebOrderSystem
 - ResultSystem
-
